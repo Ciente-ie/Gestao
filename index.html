@@ -1,680 +1,223 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Meu Scout Pro – Admin</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão de Atletas</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
 <style>
-  :root{
-    --bg:#f6f8fb; --surface:#ffffff; --ink:#0f172a; --muted:#6b7280; --line:#e5e7eb;
-    --accent:#22c55e; --danger:#ef4444; --info:#3b82f6; --amber:#f59e0b;
-    --k1:#ecfdf5; --k2:#eff6ff; --k3:#fef3c7; --k4:#fef2f2;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,Segoe UI,Arial}
-  header{position:sticky;top:0;z-index:30;display:flex;gap:12px;align-items:center;
-    padding:14px 18px;background:#fff;backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
-  h1{font-size:18px;margin:0;font-weight:800}
-  nav{margin-left:auto;display:flex;gap:8px}
-  nav button{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer}
-  nav button.active{background:var(--accent);border-color:var(--accent);color:#fff}
-  .wrap{max-width:1240px;margin:20px auto;padding:0 16px}
-  .hidden{display:none}
-
-  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 6px 24px #0000000d}
-  .title{font-size:18px;font-weight:800}
-  .subtle{color:var(--muted);font-size:12px}
-  .row{display:grid;gap:12px}
-  .row-2{grid-template-columns:1fr 1fr}
-  .row-3{grid-template-columns:repeat(3,1fr)}
-  label{display:block;font-size:12px;color:var(--muted);margin:2px 0 6px}
-  input,select,textarea{width:100%;background:#fff;border:1px solid var(--line);color:var(--ink);padding:10px;border-radius:10px}
-  textarea{min-height:84px;resize:vertical}
-  .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-  .btn{background:var(--accent);border:none;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:600}
-  .btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}
-  .btn.danger{background:var(--danger)}
-  .btn.sm{padding:6px 10px;font-size:12px;border-radius:8px}
-  .badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:#f8fafc;font-size:12px;color:#0f172a}
-  .badge.ok{background:#ecfdf5;border-color:#bbf7d0;color:#065f46}
-  .badge.free{background:#fef2f2;border-color:#fecaca;color:#991b1b}
-  .badge.loan{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
-  .divider{height:1px;background:var(--line);margin:12px 0}
-
-  /* KPIs coloridos */
-  .kpis{display:grid;gap:12px;margin:10px 0 6px}
-  @media(min-width:900px){.kpis{grid-template-columns:repeat(4,1fr)}}
-  .kpi{border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;justify-content:space-between;align-items:center}
-  .kpi:nth-child(1){background:var(--k2)}
-  .kpi:nth-child(2){background:var(--k1)}
-  .kpi:nth-child(3){background:var(--k3)}
-  .kpi:nth-child(4){background:var(--k4)}
-  .kpi .label{font-size:12px;color:#334155}
-  .kpi .val{font-weight:800;font-size:20px}
-
-  /* Lista com cards em linha (inspir. Wyscout/SofaScore) */
-  .list{display:grid;gap:10px}
-  .item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;gap:12px;align-items:center}
-  .avatar{width:56px;height:56px;border-radius:12px;object-fit:cover;background:#f3f4f6;border:1px solid var(--line);flex:0 0 56px}
-  .grow{flex:1;min-width:0}
-  .name{font-weight:900;line-height:1.1}
-  .cols{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:4px}
-  .col{display:flex;align-items:center;gap:6px;padding:0 10px;border-left:1px solid var(--line)}
-  .col:first-child{border-left:none;padding-left:0}
-  .right{margin-left:auto;display:flex;gap:6px;align-items:center}
-
-  /* Modal */
-  .overlay{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
-  .modal{background:#fff;border:1px solid var(--line);border-radius:16px;max-width:860px;width:100%;padding:16px;max-height:85vh;overflow:auto;box-shadow:0 24px 60px #0003}
-  .modal .head{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .kv{display:grid;grid-template-columns:220px 1fr;gap:6px;margin:4px 0}
-  .error{color:#b91c1c;font-size:13px}
-  .success{color:#065f46;font-size:13px}
-  .progress{height:8px;background:#eef2ff;border-radius:999px;overflow:hidden;border:1px solid var(--line)}
-  .progress>div{height:100%;background:linear-gradient(90deg,#60a5fa,#22c55e);width:0%}
+    body {
+        font-family: Arial, sans-serif;
+        background: #f5f7fa;
+        margin: 0;
+        padding: 0;
+    }
+    header {
+        background: #1a73e8;
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-size: 1.5rem;
+    }
+    .container {
+        max-width: 1100px;
+        margin: auto;
+        padding: 20px;
+    }
+    .form-section, .list-section {
+        background: white;
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    input, select, textarea, button {
+        width: 100%;
+        padding: 10px;
+        margin-top: 8px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        font-size: 1rem;
+    }
+    button {
+        background: #1a73e8;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+    }
+    button:hover {
+        background: #1558b0;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+    th {
+        background: #f1f3f6;
+    }
+    .name {
+        font-weight: bold;
+        color: #1a73e8;
+    }
+    .actions button {
+        padding: 5px 10px;
+        font-size: 0.8rem;
+        margin-right: 5px;
+    }
+    .contract-text {
+        display: none;
+        background: #f9f9f9;
+        padding: 10px;
+        margin-top: 5px;
+        border-left: 3px solid #1a73e8;
+        white-space: pre-wrap;
+    }
+    .toggle-btn {
+        background: #28a745;
+    }
+    .toggle-btn:hover {
+        background: #1e7e34;
+    }
 </style>
 </head>
 <body>
-<header>
-  <h1>Meu Scout Pro</h1>
-  <nav>
-    <button id="btnDash" class="active" onclick="switchTab('dash')">Dashboard</button>
-    <button id="btnCad" onclick="switchTab('cad')">Cadastro</button>
-  </nav>
-</header>
 
-<div class="wrap">
-  <!-- DASHBOARD -->
-  <section id="tabDash">
-    <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div class="title">Atletas</div>
-        <div id="status_global" class="subtle">Conectando…</div>
-      </div>
+<header>📊 Gestão de Atletas</header>
+<div class="container">
 
-      <div class="row row-3">
-        <div>
-          <label>Buscar por nome</label>
-          <input id="filtro_nome" placeholder="Digite para filtrar..." oninput="renderDash()"/>
-        </div>
-        <div>
-          <label>Categoria</label>
-          <select id="filtro_categoria" onchange="renderDash()">
-            <option value="">Todas</option>
-            <option>Sub-13</option><option>Sub-15</option><option>Sub-17</option><option>Sub-20</option><option>Profissional</option>
-          </select>
-        </div>
-        <div>
-          <label>Término do contrato</label>
-          <select id="filtro_termino" onchange="renderDash()">
-            <option value="">Todos</option>
-            <option value="1">1 mês</option>
-            <option value="3">até 3 meses</option>
-            <option value="6">até 6 meses</option>
-            <option value="7">mais de 6 meses</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="kpis">
-        <div class="kpi"><div class="label">Total</div><div id="k_total" class="val">0</div></div>
-        <div class="kpi"><div class="label">Em clube</div><div id="k_clube" class="val">0</div></div>
-        <div class="kpi"><div class="label">Emprestados</div><div id="k_loan" class="val">0</div></div>
-        <div class="kpi"><div class="label">Sem clube</div><div id="k_free" class="val">0</div></div>
-      </div>
-
-      <div class="divider"></div>
-      <div class="row row-2">
-        <!-- Em clube -->
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div class="title" style="font-size:16px">Em Clube</div>
-            <div class="subtle" id="count_clube">0</div>
-          </div>
-          <div id="lista_clube" class="list"></div>
-        </div>
-        <!-- Sem clube -->
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div class="title" style="font-size:16px">Sem clube</div>
-            <div class="subtle" id="count_livre">0</div>
-          </div>
-          <div id="lista_livre" class="list"></div>
-        </div>
-      </div>
+    <div class="form-section">
+        <h2>Cadastrar Atleta</h2>
+        <input type="text" id="nome" placeholder="Nome do atleta" required>
+        <input type="text" id="posicao" placeholder="Posição">
+        <select id="clubeStatus">
+            <option value="">Selecione se está em clube</option>
+            <option value="Em Clube">Em Clube</option>
+            <option value="Sem Clube">Sem Clube</option>
+        </select>
+        <select id="pe">
+            <option value="">Pé dominante</option>
+            <option value="Direito">Direito</option>
+            <option value="Esquerdo">Esquerdo</option>
+            <option value="Ambidestro">Ambidestro</option>
+        </select>
+        <input type="date" id="terminoContrato">
+        <select id="tipoContrato">
+            <option value="">Tipo de contrato</option>
+            <option value="Profissional">Profissional</option>
+            <option value="Formação">Formação</option>
+            <option value="Empréstimo">Empréstimo</option>
+            <option value="Simples">Simples</option>
+        </select>
+        <textarea id="contratoTexto" placeholder="Cole ou digite o contrato aqui..."></textarea>
+        <button onclick="salvarAtleta()">Salvar Atleta</button>
     </div>
-  </section>
 
-  <!-- CADASTRO -->
-  <section id="tabCad" class="hidden">
-    <div class="row row-2">
-      <div class="card">
-        <div class="title" style="margin-bottom:8px">Cadastro de Atleta</div>
-        <div class="row row-2">
-          <div><label>Nome completo</label><input id="a_nome" placeholder="Ex.: João da Silva"/></div>
-          <div><label>Data de nascimento</label><input id="a_nasc" type="date"/></div>
-        </div>
-        <div class="row row-2">
-          <div><label>Posição</label>
-            <select id="a_posicao"><option value="">Selecione</option><option>Goleiro</option><option>Defesa</option><option>Meio-campo</option><option>Ataque</option></select>
-          </div>
-          <div><label>Categoria</label>
-            <select id="a_categoria"><option value="">Selecione</option><option>Sub-13</option><option>Sub-15</option><option>Sub-17</option><option>Sub-20</option><option>Profissional</option></select>
-          </div>
-        </div>
-        <div class="row row-2">
-          <div><label>Contato do atleta</label><input id="a_contato_atleta" placeholder="(xx) xxxxx-xxxx / email"/></div>
-          <div><label>Contato do agente</label><input id="a_contato_agente" placeholder="(xx) xxxxx-xxxx / email"/></div>
-        </div>
-
-        <div class="row row-2">
-          <div><label>Situação</label>
-            <select id="a_situacao">
-              <option value="Em clube">Em clube</option>
-              <option value="Emprestado">Emprestado</option>
-              <option value="Sem clube">Sem clube</option>
-            </select>
-          </div>
-          <div><label>Clube Atual</label><input id="a_clube_atual" placeholder="Ex.: EC Tal"/></div>
-        </div>
-        <div class="row row-2">
-          <div><label>Último clube</label><input id="a_ultimo_clube" placeholder="Ex.: EC Anterior"/></div>
-          <div><label>Pé dominante</label>
-            <select id="a_pe"><option value="">Selecione</option><option>Direito</option><option>Esquerdo</option><option>Ambidestro</option></select>
-          </div>
-        </div>
-
-        <div class="row row-2">
-          <div><label>Competições</label><input id="a_competicoes" placeholder="Paulista Sub-17, Copa SP…"/></div>
-          <div><label>Títulos</label><input id="a_titulos" placeholder="Copa Regional 2024"/></div>
-        </div>
-        <div class="row row-2">
-          <div><label>Jogos</label><input id="a_jogos" type="number" min="0"/></div>
-          <div><label>Gols</label><input id="a_gols" type="number" min="0"/></div>
-        </div>
-        <div class="row row-2">
-          <div><label>Minutos – Atual</label><input id="a_min_atual" type="number" min="0"/></div>
-          <div><label>Minutos – Última</label><input id="a_min_ultima" type="number" min="0"/></div>
-        </div>
-        <div class="row row-2">
-          <div><label>Foto do atleta (opcional)</label><input id="a_foto" type="file" accept="image/*"/></div>
-          <div><label>Observações</label><input id="a_obs" placeholder="Características, observações gerais"/></div>
-        </div>
-
-        <div class="actions" style="margin-top:8px">
-          <button id="btnSalvarAtleta" class="btn sm" onclick="salvarAtletaComContrato()">Salvar atleta (com foto/contrato se preenchidos)</button>
-          <button class="btn secondary sm" onclick="limparFormAtleta()">Novo/limpar</button>
-          <span id="a_status" class="subtle"></span>
-        </div>
-
-        <div id="up_foto_box" class="hidden" style="margin-top:10px">
-          <div class="subtle" id="up_foto_txt">Enviando foto… 0%</div>
-          <div class="progress"><div id="up_foto_bar"></div></div>
-        </div>
-
-        <small class="subtle">ID: <span id="a_id" class="badge">novo</span></small>
-      </div>
-
-      <div class="card">
-        <div class="title" style="margin-bottom:8px">Contrato com a agência (opcional)</div>
-        <div class="row row-2">
-          <div><label>Tipo de contrato</label>
-            <select id="c_tipo"><option value="">Selecione</option><option>Representação</option><option>Intermediação</option><option>Exclusividade</option></select>
-          </div>
-          <div><label>Arquivo (PDF)</label><input id="c_arquivo" type="file" accept=".pdf"/></div>
-        </div>
-        <div class="row row-2">
-          <div><label>Início</label><input id="c_inicio" type="date"/></div>
-          <div><label>Fim</label><input id="c_fim" type="date"/></div>
-        </div>
-        <div><label>Observações</label><input id="c_obs" placeholder="Opcional"/></div>
-
-        <div id="up_cont_box" class="hidden" style="margin-top:10px">
-          <div id="up_cont_txt" class="subtle">Enviando contrato… 0%</div>
-          <div class="progress"><div id="up_cont_bar"></div></div>
-          <div id="up_cont_err" class="error"></div>
-        </div>
-
-        <div class="divider"></div>
-        <div class="title" style="margin-bottom:8px">Contratos cadastrados</div>
-        <div id="lista_contratos_atleta" class="subtle">—</div>
-      </div>
+    <div class="list-section">
+        <h2>Atletas Cadastrados</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Posição</th>
+                    <th>Status</th>
+                    <th>Fim Contrato</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody id="listaAtletas"></tbody>
+        </table>
     </div>
-  </section>
+
 </div>
 
-<!-- MODAL PERFIL -->
-<div id="overlay" class="overlay" role="dialog" aria-modal="true">
-  <div class="modal">
-    <div class="head">
-      <h3 id="perfil_nome" style="margin:0"></h3>
-      <button class="btn secondary sm" onclick="fecharPerfil()">Fechar</button>
-    </div>
-    <div class="subtle">Idade: <span id="perfil_idade"></span> • <span id="perfil_pc"></span></div>
-    <div style="margin-top:6px"><span id="perfil_status" class="badge">Status</span></div>
-    <div class="divider"></div>
-    <div class="kv"><div class="subtle">Contatos</div><div id="perfil_contatos"></div></div>
-    <div class="kv"><div class="subtle">Clube atual</div><div id="p_clube_atual"></div></div>
-    <div class="kv"><div class="subtle">Último clube</div><div id="p_ultimo_clube"></div></div>
-    <div class="kv"><div class="subtle">Pé dominante</div><div id="p_pe"></div></div>
-    <div class="kv"><div class="subtle">Jogos / Gols</div><div id="p_jogos_gols"></div></div>
-    <div class="kv"><div class="subtle">Competições</div><div id="p_competicoes"></div></div>
-    <div class="kv"><div class="subtle">Títulos</div><div id="p_titulos"></div></div>
-    <div class="kv"><div class="subtle">Minutos (Atual/Última)</div><div id="p_minutos"></div></div>
-    <div class="divider"></div>
-    <h4 style="margin:0 0 6px">Contratos</h4>
-    <div id="perfil_contratos" class="subtle">—</div>
-  </div>
-</div>
-
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, where, query } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
-
-  const firebaseConfig = {
+<script>
+const firebaseConfig = {
     apiKey: "AIzaSyCSxaH-QFQbhrCttS-J8KmVN1MXmjXqY1s",
     authDomain: "meu-scout-pro.firebaseapp.com",
     projectId: "meu-scout-pro",
-    storageBucket: "meu-scout-pro.appspot.com",
+    storageBucket: "meu-scout-pro.firebasestorage.app",
     messagingSenderId: "303977649743",
     appId: "1:303977649743:web:4e81e55c7180390ec97c3a"
-  };
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-  let app, auth, db, storage, user;
-  let atletas = []; let contratos = [];
-  let atletaAtualId = null;
+async function salvarAtleta() {
+    const nome = document.getElementById("nome").value;
+    const posicao = document.getElementById("posicao").value;
+    const clubeStatus = document.getElementById("clubeStatus").value;
+    const pe = document.getElementById("pe").value;
+    const terminoContrato = document.getElementById("terminoContrato").value;
+    const tipoContrato = document.getElementById("tipoContrato").value;
+    const contratoTexto = document.getElementById("contratoTexto").value;
 
-  const $ = (id)=>document.getElementById(id);
-  const fmtBR = (iso)=>!iso? "—" : new Date(iso+"T00:00:00").toLocaleDateString('pt-BR');
-  const idadeFrom = (iso)=>{ if(!iso) return "—"; const b=new Date(iso),t=new Date(); let a=t.getFullYear()-b.getFullYear(); const m=t.getMonth()-b.getMonth(); if(m<0||(m===0&&t.getDate()<b.getDate())) a--; return a+" anos"; };
-  const hojeISO = ()=> new Date().toISOString().slice(0,10);
-
-  function switchTab(tab){
-    ["tabDash","tabCad"].forEach(id=>$(id).classList.add("hidden"));
-    ["btnDash","btnCad"].forEach(id=>$(id).classList.remove("active"));
-    if(tab==="dash"){ $("tabDash").classList.remove("hidden"); $("btnDash").classList.add("active"); }
-    if(tab==="cad"){ $("tabCad").classList.remove("hidden"); $("btnCad").classList.add("active"); }
-    window.scrollTo({top:0,behavior:"smooth"});
-  }
-
-  async function boot(){
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    $("status_global").textContent = "Autenticando…";
-    await signInAnonymously(auth);
-    onAuthStateChanged(auth, async (u)=>{
-      user = u;
-      if(!user){ $("status_global").textContent = "Falha ao autenticar"; return; }
-      $("status_global").textContent = "Carregando dados…";
-      await recarregar();
-      $("status_global").textContent = "Pronto";
-    });
-  }
-
-  function dedupeAtletas(list){
-    const mapId = new Map(); list.forEach(a=>mapId.set(a.id,a));
-    const seen = new Set(), result=[];
-    for(const a of mapId.values()){
-      const key = ((a.nomeLower||a.nome||"").toLowerCase())+"|"+(a.nascimento||"");
-      if(seen.has(key)) continue; seen.add(key); result.push(a);
+    if (!nome) {
+        alert("Digite o nome do atleta.");
+        return;
     }
-    return result;
-  }
 
-  async function recarregar(){
-    const aSnap = await getDocs(collection(db,"atletas"));
-    atletas = dedupeAtletas(aSnap.docs.map(d=>({id:d.id, ...d.data()})));
-    const cSnap = await getDocs(collection(db,"contratos"));
-    contratos = cSnap.docs.map(d=>({id:d.id, ...d.data()}));
-    renderDash();
-  }
+    await db.collection("atletas").add({
+        nome,
+        posicao,
+        clubeStatus,
+        pe,
+        terminoContrato,
+        tipoContrato,
+        contratoTexto
+    });
 
-  function statusBadge(s){
-    if(s==="Emprestado") return `<span class="badge loan">Emprestado</span>`;
-    if(s==="Em clube") return `<span class="badge ok">Em clube</span>`;
-    return `<span class="badge free">Sem clube</span>`;
-  }
+    alert("Atleta cadastrado com sucesso!");
+    document.querySelectorAll(".form-section input, .form-section select, .form-section textarea").forEach(el => el.value = "");
+    listarAtletas();
+}
 
-  function contratoVigenteDoAtleta(idAtleta){
-    const hoje = hojeISO();
-    const list = contratos.filter(c=>c.atletaId===idAtleta && (!c.fim || c.fim >= hoje));
-    if(!list.length) return null;
-    return list.reduce((acc,cur)=>{
-      if(!acc) return cur;
-      if(!acc.fim) return acc;
-      if(!cur.fim) return cur;
-      return (cur.fim > acc.fim)? cur : acc;
-    }, null);
-  }
+async function listarAtletas() {
+    const lista = document.getElementById("listaAtletas");
+    lista.innerHTML = "";
+    const snapshot = await db.collection("atletas").orderBy("nome").get();
+    snapshot.forEach(doc => {
+        const atleta = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td class="name">${atleta.nome}</td>
+            <td>${atleta.posicao || ""}</td>
+            <td>${atleta.clubeStatus || ""}</td>
+            <td>${atleta.terminoContrato || ""}</td>
+            <td class="actions">
+                <button class="toggle-btn" onclick="toggleContrato('${doc.id}')">📄 Ver Contrato</button>
+                <button onclick="excluirAtleta('${doc.id}')">🗑</button>
+            </td>
+        `;
+        lista.appendChild(row);
 
-  function faixaTermino(c){
-    if(!c || !c.fim) return "7";
-    const hoje = new Date();
-    const fim = new Date(c.fim+"T00:00:00");
-    const dias = Math.ceil((fim-hoje)/(1000*60*60*24));
-    if(dias <= 30) return "1";
-    if(dias <= 90) return "3";
-    if(dias <= 180) return "6";
-    return "7";
-  }
+        const contratoRow = document.createElement("tr");
+        contratoRow.innerHTML = `<td colspan="5"><div class="contract-text" id="contrato-${doc.id}">${atleta.contratoTexto || "Sem contrato"}</div></td>`;
+        lista.appendChild(contratoRow);
+    });
+}
 
-  function cardAtleta(a){
-    const sit = a.situacao || "Sem clube";
-    const cvig = contratoVigenteDoAtleta(a.id);
-    const fimTxt = cvig?.fim ? `Termina em ${fmtBR(cvig.fim)}` : (cvig ? "Contrato sem data fim" : "Sem contrato vigente");
-    const el = document.createElement("div");
-    el.className = "item";
-    el.innerHTML = `
-      <img class="avatar" src="${a.fotoUrl||""}" alt="">
-      <div class="grow">
-        <div class="name">${a.nome||"-"}</div>
-        <div class="cols">
-          <div class="col"><span class="subtle">Posição</span><strong>${a.posicao||"—"}</strong></div>
-          <div class="col"><span class="subtle">Categoria</span><strong>${a.categoria||"—"}</strong></div>
-          <div class="col"><span class="subtle">Clube</span><strong>${sit==="Sem clube"?(a.ultimo_clube||"—"):(a.clube_atual||"—")}</strong></div>
-          <div class="col"><span class="subtle">Contrato</span><strong>${fimTxt}</strong></div>
-        </div>
-      </div>
-      <div class="right">
-        ${statusBadge(sit)}
-        <button class="btn secondary sm" onclick="abrirPerfil('${a.id}')">Perfil</button>
-        <button class="btn sm" onclick="editarAtleta('${a.id}')">Editar</button>
-        <button class="btn danger sm" onclick="excluirAtleta('${a.id}')">Excluir</button>
-      </div>
-    `;
-    return el;
-  }
+function toggleContrato(id) {
+    const div = document.getElementById(`contrato-${id}`);
+    div.style.display = div.style.display === "block" ? "none" : "block";
+}
 
-  function renderDash(){
-    const nome = ($("filtro_nome").value||"").toLowerCase();
-    const cat  = $("filtro_categoria").value||"";
-    const fx   = $("filtro_termino").value||"";
-
-    const boxC = $("lista_clube"), boxL = $("lista_livre");
-    boxC.innerHTML=""; boxL.innerHTML="";
-
-    let total=0, emClube=0, emprest=0, semClube=0, cC=0, cL=0;
-
-    atletas
-      .filter(a=>{
-        const okNome = !nome || (a.nome||"").toLowerCase().includes(nome);
-        const okCat  = !cat  || a.categoria===cat;
-        let okFx = true;
-        if(fx){
-          const cvig = contratoVigenteDoAtleta(a.id);
-          okFx = faixaTermino(cvig) === fx;
-        }
-        return okNome && okCat && okFx;
-      })
-      .sort((x,y)=>(x.nome||"").localeCompare(y.nome||""))
-      .forEach(a=>{
-        total++;
-        const sit = a.situacao || "Sem clube";
-        if(sit==="Sem clube"){
-          boxL.appendChild(cardAtleta(a)); cL++; semClube++;
-        }else{
-          boxC.appendChild(cardAtleta(a)); cC++;
-          if(sit==="Em clube") emClube++;
-          if(sit==="Emprestado") emprest++;
-        }
-      });
-
-    if(!boxC.children.length) boxC.innerHTML = `<div class="subtle">Nenhum atleta em clube.</div>`;
-    if(!boxL.children.length) boxL.innerHTML = `<div class="subtle">Nenhum atleta sem clube.</div>`;
-
-    $("k_total").textContent = total;
-    $("k_clube").textContent = emClube;
-    $("k_loan").textContent  = emprest;
-    $("k_free").textContent  = semClube;
-    $("count_clube").textContent = cC;
-    $("count_livre").textContent = cL;
-  }
-
-  // ===== SALVAR ATLETA + FOTO + CONTRATO =====
-  async function salvarAtletaComContrato(){
-    const btn = $("btnSalvarAtleta");
-    btn.disabled = true; $("a_status").textContent = "Salvando…"; $("a_status").className="subtle";
-    try{
-      const nome = $("a_nome").value.trim(); if(!nome) throw new Error("Informe o nome do atleta.");
-      const nascimento = $("a_nasc").value || null;
-
-      const payload = {
-        nome, nomeLower:nome.toLowerCase(), nascimento,
-        posicao: $("a_posicao").value || null,
-        categoria: $("a_categoria").value || null,
-        contato_atleta: $("a_contato_atleta").value || null,
-        contato_agente: $("a_contato_agente").value || null,
-        situacao: $("a_situacao").value || "Sem clube",
-        clube_atual: $("a_clube_atual").value || null,
-        ultimo_clube: $("a_ultimo_clube").value || null,
-        pe_dominante: $("a_pe").value || null,
-        competicoes: $("a_competicoes").value || null,
-        titulos: $("a_titulos").value || null,
-        jogos: parseInt($("a_jogos").value||"") || null,
-        gols: parseInt($("a_gols").value||"") || null,
-        minutos_atual: parseInt($("a_min_atual").value||"") || null,
-        minutos_ultima: parseInt($("a_min_ultima").value||"") || null,
-        obs: $("a_obs").value || null,
-        updatedAt: Date.now(),
-      };
-
-      // Foto (opcional) – upload antes para gravar a URL
-      const foto = $("a_foto").files?.[0];
-      if(foto){
-        const path = `fotos/${payload.nomeLower.replace(/\s+/g,'_')}_${Date.now()}_${foto.name.replace(/\s+/g,'_')}`;
-        const r = ref(storage, path);
-        $("up_foto_box").classList.remove("hidden");
-        const t = uploadBytesResumable(r, foto);
-        t.on('state_changed', (s)=>{
-          const pct = Math.round((s.bytesTransferred / s.totalBytes) * 100);
-          $("up_foto_txt").textContent = `Enviando foto… ${pct}%`;
-          $("up_foto_bar").style.width = pct+"%";
-        });
-        await new Promise((res,rej)=>{ t.on('state_changed',null,rej,()=>res()); });
-        payload.fotoUrl = await getDownloadURL(r);
-        $("up_foto_txt").textContent = "Foto enviada ✓";
-      }
-
-      // Upsert atleta (nome + nascimento)
-      let q = query(collection(db,"atletas"), where("nomeLower","==", payload.nomeLower), where("nascimento","==", nascimento || null));
-      let dup = await getDocs(q);
-      if(dup.empty){
-        const refCol = collection(db,"atletas");
-        const docRef = await addDoc(refCol, {...payload, createdAt: Date.now()});
-        atletaAtualId = docRef.id;
-      }else{
-        atletaAtualId = dup.docs[0].id;
-        await updateDoc(doc(db,"atletas",atletaAtualId), payload);
-      }
-      $("a_id").textContent = atletaAtualId;
-
-      // Contrato (opcional, PDF)
-      const c_tipo = $("c_tipo").value, c_inicio = $("c_inicio").value || null, c_fim = $("c_fim").value || null, c_obs = $("c_obs").value || null;
-      const file = $("c_arquivo").files?.[0];
-
-      if(c_tipo || c_inicio || c_fim || c_obs || file){
-        let url=null, storagePath=null;
-        if(file){
-          if(!(file.type==="application/pdf" || /\.pdf$/i.test(file.name))) throw new Error("Envie o contrato em PDF (.pdf).");
-          $("up_cont_box").classList.remove("hidden");
-          $("up_cont_err").textContent = "";
-          storagePath = `contratos/${atletaAtualId}/${Date.now()}_${file.name.replace(/\s+/g,'_')}`;
-          const rr = ref(storage, storagePath);
-          const meta = { contentType: "application/pdf" };
-          const task = uploadBytesResumable(rr, file, meta);
-          task.on('state_changed', (snap)=>{
-            const pct = Math.round((snap.bytesTransferred/snap.totalBytes)*100);
-            $("up_cont_txt").textContent = `Enviando contrato… ${pct}%`;
-            $("up_cont_bar").style.width = pct+"%";
-          });
-          await new Promise((resolve, reject)=>{
-            task.on('state_changed', null, (err)=>{
-              $("up_cont_err").textContent = "Erro no upload: " + (err?.message || err);
-              reject(err);
-            }, resolve);
-          });
-          url = await getDownloadURL(rr);
-          $("up_cont_txt").textContent = "Contrato enviado ✓";
-        }
-        await addDoc(collection(db,"contratos"), {
-          atletaId: atletaAtualId, tipo:c_tipo||null, inicio:c_inicio, fim:c_fim,
-          url, obs:c_obs, storagePath, createdAt: Date.now()
-        });
-      }
-
-      $("a_status").textContent = "Cadastro salvo!"; $("a_status").className="success";
-      await recarregar(); await carregarContratosDoAtleta(atletaAtualId);
-    }catch(e){
-      console.error(e);
-      $("a_status").textContent = e?.message || "Erro ao salvar."; $("a_status").className="error";
-    }finally{
-      btn.disabled=false;
-      setTimeout(()=>{ ["up_foto_box","up_cont_box"].forEach(id=>$(id).classList.add("hidden"));
-                       ["up_foto_bar","up_cont_bar"].forEach(id=>$(id).style.width="0%"); }, 1000);
+async function excluirAtleta(id) {
+    if (confirm("Tem certeza que deseja excluir este atleta?")) {
+        await db.collection("atletas").doc(id).delete();
+        listarAtletas();
     }
-  }
+}
 
-  function limparFormAtleta(){
-    atletaAtualId=null;
-    ["a_nome","a_nasc","a_posicao","a_categoria","a_contato_atleta","a_contato_agente","a_situacao","a_clube_atual","a_ultimo_clube","a_pe","a_competicoes","a_titulos","a_jogos","a_gols","a_min_atual","a_min_ultima","a_obs"].forEach(id=>$(id).value="");
-    ["c_tipo","c_inicio","c_fim","c_obs"].forEach(id=>$(id).value=""); $("c_arquivo").value=""; $("a_foto").value="";
-    $("a_status").textContent=""; $("a_status").className="subtle"; $("a_id").textContent="novo";
-    $("lista_contratos_atleta").innerHTML="—";
-    ["up_foto_box","up_cont_box"].forEach(id=>$(id).classList.add("hidden"));
-    ["up_foto_bar","up_cont_bar"].forEach(id=>$(id).style.width="0%");
-  }
-
-  async function editarAtleta(id){
-    switchTab('cad'); limparFormAtleta();
-    const a = atletas.find(x=>x.id===id); if(!a){ alert("Atleta não encontrado."); return; }
-    atletaAtualId=a.id; $("a_id").textContent=a.id;
-    $("a_nome").value=a.nome||""; $("a_nasc").value=a.nascimento||"";
-    $("a_posicao").value=a.posicao||""; $("a_categoria").value=a.categoria||"";
-    $("a_contato_atleta").value=a.contato_atleta||""; $("a_contato_agente").value=a.contato_agente||"";
-    $("a_situacao").value=a.situacao||"Sem clube";
-    $("a_clube_atual").value=a.clube_atual||""; $("a_ultimo_clube").value=a.ultimo_clube||"";
-    $("a_pe").value=a.pe_dominante||""; $("a_competicoes").value=a.competicoes||"";
-    $("a_titulos").value=a.titulos||""; $("a_jogos").value=a.jogos ?? "";
-    $("a_gols").value=a.gols ?? ""; $("a_min_atual").value=a.minutos_atual ?? "";
-    $("a_min_ultima").value=a.minutos_ultima ?? ""; $("a_obs").value=a.obs||"";
-    await carregarContratosDoAtleta(a.id);
-  }
-
-  async function excluirAtleta(id){
-    if(!confirm("Excluir atleta? (Arquivos no Storage não serão apagados automaticamente)")) return;
-    try{ await deleteDoc(doc(db,"atletas",id)); if(id===atletaAtualId) limparFormAtleta(); await recarregar(); }
-    catch(e){ alert("Erro ao excluir: " + (e.message||e)); }
-  }
-
-  async function carregarContratosDoAtleta(id){
-    const box = $("lista_contratos_atleta"); box.innerHTML = `Carregando…`;
-    const lista = contratos.filter(c=>c.atletaId===id).sort((x,y)=> ( (y.fim||"") ).localeCompare(x.fim||""));
-    if(!lista.length){ box.innerHTML = `Sem contratos cadastrados.`; return; }
-    const frag = document.createDocumentFragment();
-    lista.forEach(c=>{
-      const line = document.createElement("div");
-      line.style.cssText="display:flex;gap:10px;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)";
-      line.innerHTML = `
-        <div>
-          <div><strong>${c.tipo||"-"}</strong></div>
-          <div class="subtle">${c.inicio?fmtBR(c.inicio):"—"} — ${c.fim?fmtBR(c.fim):"—"}</div>
-          ${c.obs?`<div class="subtle">${c.obs}</div>`:""}
-        </div>
-        <div class="actions">
-          ${c.url?`<a class="btn secondary sm" target="_blank" href="${c.url}">Abrir</a>
-                   <a class="btn sm" href="${c.url}" download>Baixar</a>`:""}
-          <button class="btn danger sm" onclick="excluirContrato('${c.id}')">Excluir</button>
-        </div>`;
-      frag.appendChild(line);
-    });
-    box.innerHTML=""; box.appendChild(frag);
-  }
-
-  async function excluirContrato(id){
-    if(!confirm("Excluir este contrato?")) return;
-    try{
-      const c = contratos.find(x=>x.id===id);
-      if(c?.storagePath){ try{ await deleteObject(ref(storage, c.storagePath)); }catch(_e){} }
-      await deleteDoc(doc(db,"contratos",id));
-      await recarregar(); if(atletaAtualId) await carregarContratosDoAtleta(atletaAtualId);
-    }catch(e){ alert("Erro ao excluir contrato: " + (e.message||e)); }
-  }
-
-  // Perfil (modal)
-  function abrirPerfil(id){
-    const a = atletas.find(x=>x.id===id); if(!a) return;
-    $("perfil_nome").textContent = a.nome||"-";
-    $("perfil_idade").textContent = idadeFrom(a.nascimento);
-    $("perfil_pc").textContent = `${a.posicao||"—"} • ${a.categoria||"—"}`;
-    $("perfil_contatos").textContent = `Atleta: ${a.contato_atleta||"—"} | Agente: ${a.contato_agente||"—"}`;
-    $("p_clube_atual").textContent = a.clube_atual||"—";
-    $("p_ultimo_clube").textContent = a.ultimo_clube||"—";
-    $("p_pe").textContent = a.pe_dominante||"—";
-    $("p_competicoes").textContent = a.competicoes||"—";
-    $("p_titulos").textContent = a.titulos||"—";
-    $("p_minutos").textContent = `${a.minutos_atual ?? "—"} / ${a.minutos_ultima ?? "—"}`;
-    const sit = a.situacao||"Sem clube";
-    const statusEl = $("perfil_status");
-    statusEl.className = "badge " + (sit==="Em clube"?"ok":sit==="Emprestado"?"loan":"free");
-    statusEl.textContent = sit;
-
-    const contBox = $("perfil_contratos"); contBox.innerHTML="Carregando…";
-    const lista = contratos.filter(c=>c.atletaId===id).sort((x,y)=>(y.fim||"").localeCompare(x.fim||""));
-    if(!lista.length){ contBox.innerHTML="Sem contratos."; return; }
-    const frag = document.createDocumentFragment();
-    lista.forEach(c=>{
-      const el = document.createElement("div");
-      el.style.cssText="display:flex;gap:10px;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)";
-      el.innerHTML = `
-        <div>
-          <div><strong>${c.tipo||"-"}</strong></div>
-          <div class="subtle">${c.inicio?fmtBR(c.inicio):"—"} — ${c.fim?fmtBR(c.fim):"—"}</div>
-          ${c.obs?`<div class="subtle">${c.obs}</div>`:""}
-        </div>
-        <div class="actions">
-          ${c.url?`<a class="btn secondary sm" target="_blank" href="${c.url}">Abrir</a>
-                   <a class="btn sm" href="${c.url}" download>Baixar</a>`:""}
-        </div>`;
-      frag.appendChild(el);
-    });
-    contBox.innerHTML=""; contBox.appendChild(frag);
-    $("overlay").style.display = "flex";
-  }
-  function fecharPerfil(){ $("overlay").style.display = "none"; }
-
-  // Expor
-  window.switchTab = switchTab;
-  window.recarregar = recarregar;
-  window.editarAtleta = editarAtleta;
-  window.excluirAtleta = excluirAtleta;
-  window.salvarAtletaComContrato = salvarAtletaComContrato;
-  window.limparFormAtleta = limparFormAtleta;
-  window.excluirContrato = excluirContrato;
-  window.abrirPerfil = abrirPerfil;
-  window.fecharPerfil = fecharPerfil;
-
-  boot();
+listarAtletas();
 </script>
 
-<!-- Regras mínimas:
-FIRESTORE:
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} { allow read, write: if request.auth != null; }
-  }
-}
-STORAGE:
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /{allPaths=**} { allow read, write: if request.auth != null; }
-  }
-}
--->
 </body>
 </html>
