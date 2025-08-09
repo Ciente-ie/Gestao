@@ -1,223 +1,885 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestão de Atletas</title>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        background: #f5f7fa;
-        margin: 0;
-        padding: 0;
-    }
-    header {
-        background: #1a73e8;
-        color: white;
-        padding: 15px;
-        text-align: center;
-        font-size: 1.5rem;
-    }
-    .container {
-        max-width: 1100px;
-        margin: auto;
-        padding: 20px;
-    }
-    .form-section, .list-section {
-        background: white;
-        padding: 20px;
-        margin-bottom: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-    input, select, textarea, button {
-        width: 100%;
-        padding: 10px;
-        margin-top: 8px;
-        margin-bottom: 15px;
-        border: 1px solid #ccc;
-        border-radius: 6px;
-        font-size: 1rem;
-    }
-    button {
-        background: #1a73e8;
-        color: white;
-        border: none;
-        cursor: pointer;
-        font-weight: bold;
-    }
-    button:hover {
-        background: #1558b0;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    th, td {
-        padding: 12px;
-        border-bottom: 1px solid #ddd;
-        text-align: left;
-    }
-    th {
-        background: #f1f3f6;
-    }
-    .name {
-        font-weight: bold;
-        color: #1a73e8;
-    }
-    .actions button {
-        padding: 5px 10px;
-        font-size: 0.8rem;
-        margin-right: 5px;
-    }
-    .contract-text {
-        display: none;
-        background: #f9f9f9;
-        padding: 10px;
-        margin-top: 5px;
-        border-left: 3px solid #1a73e8;
-        white-space: pre-wrap;
-    }
-    .toggle-btn {
-        background: #28a745;
-    }
-    .toggle-btn:hover {
-        background: #1e7e34;
-    }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Agência de Atletas</title>
+  <meta name="description" content="Gestão de atletas – login + cadastro + lista (Firebase)" />
+  <!-- Tailwind CDN (standalone build) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root { color-scheme: light; }
+    .card { background:#fff; border-radius:16px; box-shadow:0 6px 20px rgba(15,23,42,.08); }
+    .btn { display:inline-flex; gap:8px; align-items:center; justify-content:center; border-radius:12px; padding:10px 14px; font-weight:600; border:1px solid #e2e8f0; }
+    .btn:hover{ background:#f8fafc; }
+    .btn:active{ transform:scale(.99); }
+    .btn-primary{ background:#0f172a; color:#fff; border-color:#0f172a; }
+    .btn-primary:hover{ background:#1e293b; }
+    .btn-ghost{ background:transparent; }
+    .input{ width:100%; border-radius:12px; border:1px solid #cbd5e1; padding:10px 12px; outline:none; }
+    .input:focus{ box-shadow:0 0 0 3px rgba(100,116,139,.25); }
+    .label{ font-size:12px; font-weight:700; color:#475569; display:block; margin-bottom:6px; letter-spacing:.02em; text-transform:uppercase; }
+    .badge{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; background:#f1f5f9; color:#334155; font-size:12px; padding:3px 10px; font-weight:700; border:1px solid #e2e8f0; }
+    .badge.green{ background:#ecfdf5; color:#065f46; border-color:#bbf7d0; }
+    .badge.amber{ background:#fffbeb; color:#92400e; border-color:#fde68a; }
+    .badge.blue{ background:#eff6ff; color:#1e40af; border-color:#bfdbfe; }
+    .section-title{ display:flex; align-items:center; gap:10px; font-weight:800; }
+    .section-title svg{ width:18px; height:18px; }
+    .hero-gradient{ background:linear-gradient(135deg,#0f172a 0%,#334155 100%); color:#fff; }
+    .table thead th{ font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:.06em; }
+    .muted{ color:#64748b; }
+    .chip{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:4px 10px; background:#f8fafc; border:1px solid #e2e8f0; font-size:12px; font-weight:600; }
+    /* Cores variadas nos CARDS do PERFIL */
+    #profileView .grid > .card:nth-of-type(1){ background:#eff6ff; border:1px solid #bfdbfe; }
+    #profileView .grid > .card:nth-of-type(2){ background:#ecfdf5; border:1px solid #bbf7d0; }
+    #profileView .grid > .card:nth-of-type(3){ background:#fff7ed; border:1px solid #fed7aa; }
+    #profileView .grid > .card:nth-of-type(4){ background:#f5f3ff; border:1px solid #ddd6fe; }
+  </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-900">
+  <!-- Navbar (hidden until auth) -->
+  <header id="navbar" class="hidden border-b border-slate-200 bg-white">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3 font-bold">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-slate-900"><path d="M12 2a7 7 0 00-7 7v4a7 7 0 1014 0V9a7 7 0 00-7-7z"/></svg>
+        Agência de Atletas
+      </div>
+      <nav class="flex items-center gap-3">
+        <button class="btn btn-ghost" id="navAtletas">Atletas</button>
+        <button class="btn" id="navCadastrar">Cadastrar</button>
+        <span id="userEmail" class="badge"></span>
+        <button class="btn" id="btnSair">Sair</button>
+      </nav>
+    </div>
+  </header>
 
-<header>📊 Gestão de Atletas</header>
-<div class="container">
+  <!-- Login / Registro (permanece no DOM, mas o app entra anônimo automaticamente) -->
+  <main id="authView" class="min-h-[calc(100vh-64px)] grid place-items-center p-4">
+    <div class="card w-full max-w-md overflow-hidden">
+      <div class="hero-gradient p-5">
+        <h1 id="authTitle" class="text-2xl font-extrabold">Entrar</h1>
+        <p class="text-sm opacity-80">Acesse sua conta para gerenciar atletas.</p>
+      </div>
+      <div class="p-6">
+        <form id="authForm" class="space-y-4">
+          <div>
+            <label class="label">E-mail</label>
+            <input id="authEmail" class="input" type="email" />
+          </div>
+          <div>
+            <label class="label">Senha</label>
+            <input id="authPass" class="input" type="password" />
+          </div>
+          <p id="authError" class="hidden text-red-600 text-sm"></p>
+          <button id="authSubmit" class="btn btn-primary w-full" type="submit">Entrar</button>
+        </form>
+        <div class="text-center mt-4 text-sm">
+          <button id="toggleMode" class="underline">Não tem conta? Registrar</button>
+        </div>
+      </div>
+    </div>
+  </main>
 
-    <div class="form-section">
-        <h2>Cadastrar Atleta</h2>
-        <input type="text" id="nome" placeholder="Nome do atleta" required>
-        <input type="text" id="posicao" placeholder="Posição">
-        <select id="clubeStatus">
-            <option value="">Selecione se está em clube</option>
-            <option value="Em Clube">Em Clube</option>
-            <option value="Sem Clube">Sem Clube</option>
-        </select>
-        <select id="pe">
-            <option value="">Pé dominante</option>
-            <option value="Direito">Direito</option>
-            <option value="Esquerdo">Esquerdo</option>
-            <option value="Ambidestro">Ambidestro</option>
-        </select>
-        <input type="date" id="terminoContrato">
-        <select id="tipoContrato">
-            <option value="">Tipo de contrato</option>
-            <option value="Profissional">Profissional</option>
-            <option value="Formação">Formação</option>
-            <option value="Empréstimo">Empréstimo</option>
-            <option value="Simples">Simples</option>
-        </select>
-        <textarea id="contratoTexto" placeholder="Cole ou digite o contrato aqui..."></textarea>
-        <button onclick="salvarAtleta()">Salvar Atleta</button>
+  <!-- Dashboard / Lista -->
+  <section id="dashboardView" class="hidden max-w-7xl mx-auto px-4 py-6 space-y-4">
+    <div class="card hero-gradient p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div>
+        <h2 class="text-xl font-extrabold">Atletas</h2>
+        <p class="opacity-80 text-sm">Gerencie cadastro, contratos e avaliações</p>
+      </div>
+      <button id="btnIrCadastrar" class="btn bg-white text-slate-900 border-white hover:bg-slate-100">Novo atleta</button>
     </div>
 
-    <div class="list-section">
-        <h2>Atletas Cadastrados</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Posição</th>
-                    <th>Status</th>
-                    <th>Fim Contrato</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody id="listaAtletas"></tbody>
+    <!-- Filtros -->
+    <div class="card p-4 grid gap-3 md:grid-cols-4">
+      <div class="md:col-span-1">
+        <label class="label">Buscar</label>
+        <input id="busca" class="input" placeholder="Nome, posição, clube" />
+      </div>
+      <div>
+        <label class="label">Situação</label>
+        <select id="filtroSituacao" class="input">
+          <option value="">Todas</option>
+          <option>Em clube</option>
+          <option>Sem clube</option>
+          <option>Em avaliação</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Categoria</label>
+        <select id="filtroCategoria" class="input">
+          <option value="">Todas</option>
+          <option>Sub-11</option>
+          <option>Sub-13</option>
+          <option>Sub-15</option>
+          <option>Sub-17</option>
+          <option>Sub-20</option>
+          <option>Profissional</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Término Contrato</label>
+        <select id="filtroContrato" class="input">
+          <option value="">Todos</option>
+          <option value="3">Até 3 meses</option>
+          <option value="6">Até 6 meses</option>
+          <option value=">6">Mais de 6 meses</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card p-0 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="table w-full text-sm">
+          <thead class="bg-slate-50 border-b">
+            <tr class="text-left text-slate-600">
+              <th class="py-3 px-4">Atleta</th>
+              <th class="px-4">Idade</th>
+              <th class="px-4">Categoria</th>
+              <th class="px-4">Posição</th>
+              <th class="px-4">Situação</th>
+              <th class="px-4">Clube</th>
+              <th class="px-4">Término Contrato</th>
+              <th class="px-4 text-right">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
         </table>
+      </div>
+      <p id="listaVazia" class="hidden py-6 text-center text-slate-500">Nenhum atleta encontrado</p>
+    </div>
+  </section>
+
+  <!-- Perfil -->
+  <section id="profileView" class="hidden max-w-7xl mx-auto px-4 py-6">
+    <div class="card p-5 mb-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div id="p_avatar" class="w-12 h-12 rounded-full grid place-items-center bg-slate-900 text-white font-extrabold"></div>
+        <div>
+          <h2 id="p_nome_title" class="text-xl font-extrabold">—</h2>
+          <div class="muted text-sm" id="p_resumo"></div>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button id="btnEditarPerfil" class="btn">Editar</button>
+        <button id="btnVoltarLista" class="btn">Voltar</button>
+      </div>
     </div>
 
-</div>
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="card p-5">
+        <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 100-10 5 5 0 000 10z"/><path fill-rule="evenodd" d="M2 22a10 10 0 1120 0H2z" clip-rule="evenodd"/></svg> Informações básicas</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div><span class="label">Nome</span><div id="p_nome"></div></div>
+          <div><span class="label">Posição</span><div id="p_posicao"></div></div>
+          <div><span class="label">Nascimento</span><div id="p_nasc"></div></div>
+          <div><span class="label">Idade</span><div id="p_idade"></div></div>
+          <div><span class="label">Pé</span><div id="p_pe"></div></div>
+          <div><span class="label">Categoria</span><div id="p_categoria"></div></div>
+          <div class="col-span-2"><span class="label">Agente</span><div id="p_agente"></div></div>
+        </div>
+      </div>
+      <div class="card p-5">
+        <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a1 1 0 00-1 1v2a1 1 0 001 1h1v12a1 1 0 001 1h12a1 1 0 001-1V7h1a1 1 0 001-1V4a1 1 0 00-1-1H4zm4 5h8v2H8V8zm0 4h8v2H8v-2z"/></svg> Carreira</h3>
+        <div class="grid grid-cols-2 gap-3">
+          <div><span class="label">Situação</span><div id="p_situacao"></div></div>
+          <div><span class="label">Clube atual</span><div id="p_clube_atual"></div></div>
+          <div><span class="label">Último clube</span><div id="p_ultimo_clube"></div></div>
+          <div><span class="label">Competição</span><div id="p_competicao"></div></div>
+          <div><span class="label">Minutos na temporada</span><div id="p_minutos"></div></div>
+          <div class="col-span-2"><span class="label">Títulos</span><div id="p_titulos"></div></div>
+          <div class="col-span-2"><span class="label">Avaliação</span><div id="p_avaliacao"></div></div>
+        </div>
+      </div>
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="section-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5a2 2 0 012-2h12a2 2 0 012 2v3H4V5z"/><path d="M4 10h16v7a2 2 0 01-2 2H6a2 2 0 01-2-2v-7z"/></svg> Contrato</h3>
+          <button id="btnToggleContrato" class="btn">Mostrar contrato</button>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><span class="label">Tipo</span><div id="p_tipo"></div></div>
+          <div><span class="label">Status interno</span><div id="p_status"></div></div>
+          <div><span class="label">Início</span><div id="p_inicio"></div></div>
+          <div><span class="label">Término</span><div id="p_termino"></div></div>
+          <div class="col-span-2">
+            <span class="label">Texto do contrato</span>
+            <div id="p_contrato_wrap" class="hidden">
+              <div id="p_contrato" class="whitespace-pre-wrap"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card p-5">
+        <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v2H4zM4 9h16v2H4zM4 14h10v2H4z"/></svg> Observações</h3>
+        <div id="p_obs" class="whitespace-pre-wrap"></div>
+      </div>
+    </div>
+  </section>
 
-<script>
-const firebaseConfig = {
-    apiKey: "AIzaSyCSxaH-QFQbhrCttS-J8KmVN1MXmjXqY1s",
-    authDomain: "meu-scout-pro.firebaseapp.com",
-    projectId: "meu-scout-pro",
-    storageBucket: "meu-scout-pro.firebasestorage.app",
-    messagingSenderId: "303977649743",
-    appId: "1:303977649743:web:4e81e55c7180390ec97c3a"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+  <!-- Cadastro / Edição -->
+  <section id="formView" class="hidden max-w-7xl mx-auto px-4 py-6">
+    <div class="card p-5 mb-4 hero-gradient">
+      <h2 id="formTitulo" class="text-xl font-extrabold">Cadastrar atleta</h2>
+      <p class="opacity-80 text-sm">Preencha os campos. Campos de avaliação aparecem ao selecionar "Em avaliação".</p>
+    </div>
 
-async function salvarAtleta() {
-    const nome = document.getElementById("nome").value;
-    const posicao = document.getElementById("posicao").value;
-    const clubeStatus = document.getElementById("clubeStatus").value;
-    const pe = document.getElementById("pe").value;
-    const terminoContrato = document.getElementById("terminoContrato").value;
-    const tipoContrato = document.getElementById("tipoContrato").value;
-    const contratoTexto = document.getElementById("contratoTexto").value;
+    <div class="grid gap-4 md:grid-cols-2">
+      <!-- Coluna esquerda -->
+      <div class="space-y-4">
+        <div class="card p-5">
+          <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 100-10 5 5 0 000 10z"/><path fill-rule="evenodd" d="M2 22a10 10 0 1120 0H2z" clip-rule="evenodd"/></svg> Informações básicas</h3>
+          <form id="athleteForm" class="grid grid-cols-2 gap-4">
+            <input type="hidden" id="athleteId" />
+            <div class="col-span-2">
+              <label class="label">Nome*</label>
+              <input id="f_nome" class="input" required />
+            </div>
+            <div>
+              <label class="label">Posição</label>
+              <input id="f_posicao" class="input" />
+            </div>
+            <div>
+              <label class="label">Categoria</label>
+              <select id="f_categoria" class="input">
+                <option value="">—</option>
+                <option>Sub-11</option>
+                <option>Sub-13</option>
+                <option>Sub-15</option>
+                <option>Sub-17</option>
+                <option>Sub-20</option>
+                <option>Profissional</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Data de Nasc.</label>
+              <input id="f_nasc" type="date" class="input" />
+            </div>
+            <div>
+              <label class="label">Pé</label>
+              <select id="f_pe" class="input">
+                <option value="">Selecione</option>
+                <option>Direito</option>
+                <option>Esquerdo</option>
+                <option>Ambidestro</option>
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="label">Contato do Agente</label>
+              <input id="f_agente" class="input" />
+            </div>
+            <div class="col-span-2">
+              <label class="label">Observações</label>
+              <textarea id="f_obs" class="input h-24"></textarea>
+            </div>
+          </form>
+        </div>
 
-    if (!nome) {
-        alert("Digite o nome do atleta.");
-        return;
+        <div class="card p-5">
+          <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a1 1 0 00-1 1v2a1 1 0 001 1h1v12a1 1 0 001 1h12a1 1 0 001-1V7h1a1 1 0 001-1V4a1 1 0 00-1-1H4zm4 5h8v2H8V8zm0 4h8v2H8v-2z"/></svg> Carreira</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">Situação</label>
+              <select id="f_situacao" class="input">
+                <option>Em clube</option>
+                <option>Sem clube</option>
+                <option>Em avaliação</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Competição</label>
+              <input id="f_competicao" class="input" placeholder="Série B, Paulista Sub-20" />
+            </div>
+            <div>
+              <label class="label">Clube atual</label>
+              <input id="f_clube_atual" class="input" placeholder="Ex.: Clube XYZ" />
+            </div>
+            <div>
+              <label class="label">Último clube</label>
+              <input id="f_ultimo_clube" class="input" placeholder="Ex.: Clube Anterior" />
+            </div>
+            <div>
+              <label class="label">Minutos na temporada</label>
+              <input id="f_minutos" class="input" type="number" min="0" step="1" placeholder="Ex.: 1234" />
+            </div>
+            <div class="col-span-2">
+              <label class="label">Títulos (separe por vírgula)</label>
+              <input id="f_titulos" class="input" placeholder="Ex.: Paulista Sub-17 2022, Copa XYZ 2023" />
+            </div>
+            <!-- Avaliação (condicional) -->
+            <div class="col-span-2" id="boxAvaliacao">
+              <div class="grid grid-cols-2 gap-4 p-4 rounded-xl border border-sky-200 bg-sky-50">
+                <div>
+                  <label class="label">Clube da avaliação</label>
+                  <input id="f_avaliacao_clube" class="input" placeholder="Preencher se 'Em avaliação'" />
+                </div>
+                <div>
+                  <label class="label">Início da avaliação</label>
+                  <input id="f_avaliacao_inicio" type="date" class="input" />
+                </div>
+                <div>
+                  <label class="label">Fim da avaliação</label>
+                  <input id="f_avaliacao_fim" type="date" class="input" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coluna direita -->
+      <div class="space-y-4">
+        <div class="card p-5">
+          <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 5a2 2 0 012-2h12a2 2 0 012 2v3H4V5z"/><path d="M4 10h16v7a2 2 0 01-2 2H6a2 2 0 01-2-2v-7z"/></svg> Contrato</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="label">Tipo</label>
+              <select id="f_tipo" class="input">
+                <option value="">—</option>
+                <option>Profissional</option>
+                <option>Formação</option>
+                <option>Empréstimo</option>
+                <option>Simples</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Status interno</label>
+              <select id="f_status" class="input">
+                <option>Observação</option>
+                <option>Ativo</option>
+                <option>Inativo</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Início do contrato</label>
+              <input id="f_inicio" type="date" class="input" />
+            </div>
+            <div>
+              <label class="label">Término do contrato</label>
+              <input id="f_termino" type="date" class="input" />
+            </div>
+            <div class="col-span-2">
+              <label class="label">Texto do contrato</label>
+              <textarea id="f_contrato" class="input h-40" placeholder="Cole aqui o texto do contrato (opcional)"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="card p-5 flex items-center justify-between gap-3">
+          <div class="muted text-sm">Salve para concluir as alterações</div>
+          <div class="flex gap-2">
+            <button id="btnSalvar" class="btn btn-primary" type="submit" form="athleteForm">Salvar</button>
+            <button id="btnCancelar" class="btn" type="button">Cancelar</button>
+            <button id="btnExcluir" class="btn">Excluir</button>
+          </div>
+        </div>
+        <p id="formMsg" class="text-sm"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    // ====== CONFIG FIREBASE ======
+    const firebaseConfig = {
+      apiKey: "AIzaSyCSxaH-QFQbhrCttS-J8KmVN1MXmjXqY1s",
+      authDomain: "meu-scout-pro.firebaseapp.com",
+      projectId: "meu-scout-pro",
+      storageBucket: "meu-scout-pro.firebasestorage.app",
+      messagingSenderId: "303977649743",
+      appId: "1:303977649743:web:4e81e55c7180390ec97c3a"
+    };
+
+    // ====== Imports (Firebase v10 modular via CDN) ======
+    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut,
+      signInAnonymously,              // <--- login anônimo
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+    import {
+      getFirestore,
+      collection, addDoc,
+      doc, setDoc, getDoc, deleteDoc,
+      onSnapshot, query, orderBy
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ====== Helpers UI ======
+    const $ = (sel) => document.querySelector(sel);
+    const show = (el) => el.classList.remove('hidden');
+    const hide = (el) => el.classList.add('hidden');
+
+    const navbar = $('#navbar');
+    const authView = $('#authView');
+    const dashboardView = $('#dashboardView');
+    const formView = $('#formView');
+    const profileView = $('#profileView');
+
+    function go(view){
+      [authView, dashboardView, formView, profileView].forEach(hide);
+      show(view);
     }
 
-    await db.collection("atletas").add({
-        nome,
-        posicao,
-        clubeStatus,
-        pe,
-        terminoContrato,
-        tipoContrato,
-        contratoTexto
+    // ====== Auth UI (mantido, mas o login é automático anônimo) ======
+    let mode = 'login';
+    const authTitle = $('#authTitle');
+    const authEmail = $('#authEmail');
+    const authPass = $('#authPass');
+    const authError = $('#authError');
+    const toggleMode = $('#toggleMode');
+    const authSubmit = $('#authSubmit');
+    const userEmail = $('#userEmail');
+
+    toggleMode?.addEventListener('click', () => {
+      mode = mode === 'login' ? 'register' : 'login';
+      authTitle.textContent = mode === 'login' ? 'Entrar' : 'Criar conta';
+      toggleMode.textContent = mode === 'login' ? 'Não tem conta? Registrar' : 'Já tem conta? Entrar';
+      authSubmit.textContent = mode === 'login' ? 'Entrar' : 'Registrar';
+      authError.textContent = '';
+      authError.classList.add('hidden');
     });
 
-    alert("Atleta cadastrado com sucesso!");
-    document.querySelectorAll(".form-section input, .form-section select, .form-section textarea").forEach(el => el.value = "");
-    listarAtletas();
-}
+    // (Se o usuário insistir em usar e-mail/senha, ainda funciona)
+    $('#authForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      authError.classList.add('hidden');
+      try {
+        if(mode === 'login') {
+          await signInWithEmailAndPassword(auth, authEmail.value, authPass.value);
+        } else {
+          await createUserWithEmailAndPassword(auth, authEmail.value, authPass.value);
+        }
+      } catch(err) {
+        authError.textContent = err.message || 'Erro ao autenticar';
+        authError.classList.remove('hidden');
+      }
+    });
 
-async function listarAtletas() {
-    const lista = document.getElementById("listaAtletas");
-    lista.innerHTML = "";
-    const snapshot = await db.collection("atletas").orderBy("nome").get();
-    snapshot.forEach(doc => {
-        const atleta = doc.data();
-        const row = document.createElement("tr");
-        row.innerHTML = `
-            <td class="name">${atleta.nome}</td>
-            <td>${atleta.posicao || ""}</td>
-            <td>${atleta.clubeStatus || ""}</td>
-            <td>${atleta.terminoContrato || ""}</td>
-            <td class="actions">
-                <button class="toggle-btn" onclick="toggleContrato('${doc.id}')">📄 Ver Contrato</button>
-                <button onclick="excluirAtleta('${doc.id}')">🗑</button>
-            </td>
+    $('#btnSair')?.addEventListener('click', () => signOut(auth));
+
+    // ====== Navegação superior ======
+    $('#navAtletas')?.addEventListener('click', () => go(dashboardView));
+    $('#navCadastrar')?.addEventListener('click', () => { limparFormulario(); prepararNovo(); go(formView); });
+    $('#btnIrCadastrar')?.addEventListener('click', () => { limparFormulario(); prepararNovo(); go(formView); });
+
+    // ====== Estado de autenticação (AUTO LOGIN ANÔNIMO) ======
+    let unsubLista = null; // para desligar onSnapshot quando sair
+    onAuthStateChanged(auth, async (u) => {
+      try {
+        if(u){
+          userEmail.textContent = u.isAnonymous ? 'Convidado' : (u.email || '');
+          show(navbar);
+          go(dashboardView);
+          ouvirLista();
+        } else {
+          await signInAnonymously(auth); // entra como convidado automaticamente
+        }
+      } catch (err) {
+        console.error('Falha no login anônimo:', err);
+        hide(navbar);
+        go(authView);
+      }
+    });
+
+    // ====== LISTA (Dashboard) ======
+    const busca = $('#busca');
+    const filtroSituacao = $('#filtroSituacao');
+    const filtroCategoria = $('#filtroCategoria');
+    const filtroContrato = $('#filtroContrato');
+
+    const tableBody = $('#tableBody');
+    const listaVazia = $('#listaVazia');
+
+    let lista = [];
+
+    [busca, filtroSituacao, filtroCategoria, filtroContrato].forEach(el => el?.addEventListener('input', renderLista));
+
+    function renderLista(){
+      const q = (busca?.value || '').toLowerCase();
+      const sit = filtroSituacao?.value;
+      const cat = filtroCategoria?.value;
+      const prazo = filtroContrato?.value; // '', '3', '6', '>6'
+
+      const now = new Date();
+
+      const filtered = lista.filter(a => {
+        const textMatch = (
+          (a.name||'').toLowerCase().includes(q) ||
+          (a.position||'').toLowerCase().includes(q) ||
+          (a.currentClub||'').toLowerCase().includes(q)
+        );
+        const sitMatch = !sit || (a.clubSituation === sit);
+        const catMatch = !cat || (a.category === cat);
+        let prazoMatch = true;
+        if(prazo){
+          const months = monthsUntil(a.contractEnd, now);
+          if(prazo === '3') prazoMatch = (months !== null && months <= 3);
+          else if(prazo === '6') prazoMatch = (months !== null && months <= 6);
+          else if(prazo === '>6') prazoMatch = (months !== null && months > 6);
+        }
+        return textMatch && sitMatch && catMatch && prazoMatch;
+      });
+
+      tableBody.innerHTML = '';
+      filtered.forEach(a => {
+        const idade = calcAge(a.birthdate);
+        const initials = (a.name||'').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase() || 'A';
+        const badgeCls = a.clubSituation === 'Em avaliação' ? 'badge blue' : (a.clubSituation === 'Em clube' ? 'badge green' : 'badge amber');
+        const tr = document.createElement('tr');
+        tr.className = 'border-b last:border-none';
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-medium">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full grid place-items-center bg-slate-900 text-white text-xs font-extrabold">${initials}</div>
+              <button class="underline" data-profile="${a.id}">${escapeHTML(a.name||'')}</button>
+            </div>
+          </td>
+          <td class="px-4">${idade ?? '—'}</td>
+          <td class="px-4"><span class="chip"><svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>${escapeHTML(a.category || '—')}</span></td>
+          <td class="px-4">${escapeHTML(a.position||'')}</td>
+          <td class="px-4">
+            ${a.clubSituation === 'Em avaliação' ? `
+              <button class="${badgeCls}" title="Clique para ver detalhes" data-eval="${a.id}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>
+                Em avaliação
+              </button>
+            ` : `<span class="${badgeCls}"><svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg> ${escapeHTML(a.clubSituation||'—')}</span>`}
+          </td>
+          <td class="px-4">${escapeHTML(a.currentClub||'—')}</td>
+          <td class="px-4">${fmtDate(a.contractEnd)||'—'}</td>
+          <td class="px-4 text-right">
+            <button class="btn" data-open="${a.id}">Editar</button>
+          </td>
         `;
-        lista.appendChild(row);
-
-        const contratoRow = document.createElement("tr");
-        contratoRow.innerHTML = `<td colspan="5"><div class="contract-text" id="contrato-${doc.id}">${atleta.contratoTexto || "Sem contrato"}</div></td>`;
-        lista.appendChild(contratoRow);
-    });
-}
-
-function toggleContrato(id) {
-    const div = document.getElementById(`contrato-${id}`);
-    div.style.display = div.style.display === "block" ? "none" : "block";
-}
-
-async function excluirAtleta(id) {
-    if (confirm("Tem certeza que deseja excluir este atleta?")) {
-        await db.collection("atletas").doc(id).delete();
-        listarAtletas();
+        tableBody.appendChild(tr);
+      });
+      listaVazia.classList.toggle('hidden', filtered.length !== 0);
     }
-}
 
-listarAtletas();
-</script>
+    function ouvirLista(){
+      const qref = query(collection(db, 'athletes'), orderBy('name'));
+      if(typeof unsubLista === 'function') unsubLista();
+      unsubLista = onSnapshot(qref, (snap) => {
+        lista = [];
+        snap.forEach(d => lista.push({ id: d.id, ...d.data() }));
+        renderLista();
+      });
+    }
 
+    tableBody?.addEventListener('click', async (e) => {
+      const evalBtn = e.target.closest('[data-eval]');
+      if(evalBtn){
+        const id = evalBtn.getAttribute('data-eval');
+        const a = lista.find(x=>x.id===id);
+        const msg = `Clube da avaliação: ${a?.trialClub||'—'}\nInício: ${fmtDate(a?.trialStart)||'—'}\nFim: ${fmtDate(a?.trialEnd)||'—'}`;
+        alert(msg);
+        return;
+      }
+      const profBtn = e.target.closest('[data-profile]');
+      if(profBtn){
+        const id = profBtn.getAttribute('data-profile');
+        abrirPerfil(id);
+        return;
+      }
+      const btn = e.target.closest('[data-open]');
+      if(!btn) return;
+      const id = btn.getAttribute('data-open');
+      await abrirEdicao(id);
+    });
+
+    // ====== PERFIL ======
+    const p_nome_title = $('#p_nome_title');
+    const p_resumo = $('#p_resumo');
+    const p_avatar = $('#p_avatar');
+    const p_nome = $('#p_nome');
+    const p_posicao = $('#p_posicao');
+    const p_nasc = $('#p_nasc');
+    const p_idade = $('#p_idade');
+    const p_pe = $('#p_pe');
+    const p_categoria = $('#p_categoria');
+    const p_agente = $('#p_agente');
+    const p_situacao = $('#p_situacao');
+    const p_clube_atual = $('#p_clube_atual');
+    const p_ultimo_clube = $('#p_ultimo_clube');
+    const p_competicao = $('#p_competicao');
+    const p_minutos = $('#p_minutos');
+    const p_titulos = $('#p_titulos');
+    const p_avaliacao = $('#p_avaliacao');
+    const p_tipo = $('#p_tipo');
+    const p_status = $('#p_status');
+    const p_inicio = $('#p_inicio');
+    const p_termino = $('#p_termino');
+    const p_contrato = $('#p_contrato');
+    const p_contrato_wrap = $('#p_contrato_wrap');
+    const btnToggleContrato = $('#btnToggleContrato');
+    const p_obs = $('#p_obs');
+
+    const btnEditarPerfil = $('#btnEditarPerfil');
+    const btnVoltarLista = $('#btnVoltarLista');
+
+    btnVoltarLista?.addEventListener('click', () => go(dashboardView));
+    btnEditarPerfil?.addEventListener('click', () => {
+      if(currentProfileId) abrirEdicao(currentProfileId);
+    });
+
+    // Toggle do contrato (oculto por padrão)
+    btnToggleContrato?.addEventListener('click', () => {
+      const isHidden = p_contrato_wrap.classList.contains('hidden');
+      p_contrato_wrap.classList.toggle('hidden', !isHidden);
+      btnToggleContrato.textContent = isHidden ? 'Ocultar contrato' : 'Mostrar contrato';
+    });
+
+    let currentProfileId = null;
+
+    async function abrirPerfil(id){
+      const ref = doc(db, 'athletes', id);
+      const snap = await getDoc(ref);
+      if(!snap.exists()) return;
+      const a = { id: snap.id, ...snap.data() };
+      currentProfileId = a.id;
+      p_nome_title.textContent = a.name || '—';
+      const initials = (a.name||'').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase() || 'A';
+      p_avatar.textContent = initials;
+      p_resumo.textContent = `${a.position||'—'} • ${a.category||'—'} • ${a.currentClub||'Sem clube'}`;
+
+      p_nome.textContent = a.name || '—';
+      p_posicao.textContent = a.position || '—';
+      p_nasc.textContent = fmtDate(a.birthdate) || '—';
+      p_idade.textContent = calcAge(a.birthdate) ?? '—';
+      p_pe.textContent = a.foot || '—';
+      p_categoria.textContent = a.category || '—';
+      p_agente.textContent = a.agentContact || '—';
+
+      p_situacao.textContent = a.clubSituation || '—';
+      p_clube_atual.textContent = a.currentClub || '—';
+      p_ultimo_clube.textContent = a.lastClub || '—';
+      p_competicao.textContent = a.competition || '—';
+      p_minutos.textContent = a.minutesSeason ?? '—';
+      p_titulos.textContent = Array.isArray(a.titles) ? a.titles.join(', ') : (a.titles || '—');
+
+      // Avaliação: início e fim
+      const avInicio = fmtDate(a.trialStart) || '—';
+      const avFim = fmtDate(a.trialEnd) || '—';
+      const avClube = a.trialClub || '—';
+      p_avaliacao.textContent = (a.trialStart || a.trialEnd || a.trialClub)
+        ? `${avClube} • ${avInicio} — ${avFim}`
+        : '—';
+
+      p_tipo.textContent = a.contractType || '—';
+      p_status.textContent = a.status || '—';
+      p_inicio.textContent = fmtDate(a.contractStart) || '—';
+      p_termino.textContent = fmtDate(a.contractEnd) || '—';
+      p_contrato.textContent = a.contractText || '';
+
+      p_obs.textContent = a.notes || '';
+      // contrato começa oculto sempre que abrir
+      if (!p_contrato_wrap.classList.contains('hidden')) {
+        p_contrato_wrap.classList.add('hidden');
+        btnToggleContrato.textContent = 'Mostrar contrato';
+      }
+      go(profileView);
+    }
+
+    // ====== FORM (Cadastro/Edição) ======
+    const athleteId = $('#athleteId');
+    const f_nome = $('#f_nome');
+    const f_posicao = $('#f_posicao');
+    const f_nasc = $('#f_nasc');
+    const f_pe = $('#f_pe');
+    const f_categoria = $('#f_categoria');
+    const f_agente = $('#f_agente');
+    const f_status = $('#f_status');
+    const f_tipo = $('#f_tipo');
+    const f_inicio = $('#f_inicio');
+    const f_termino = $('#f_termino');
+    const f_contrato = $('#f_contrato');
+    const f_obs = $('#f_obs');
+
+    const f_situacao = $('#f_situacao');
+    const f_clube_atual = $('#f_clube_atual');
+    const f_ultimo_clube = $('#f_ultimo_clube');
+    const f_competicao = $('#f_competicao');
+    const f_minutos = $('#f_minutos');
+    const f_titulos = $('#f_titulos');
+    const f_avaliacao_clube = $('#f_avaliacao_clube');
+    const f_avaliacao_inicio = $('#f_avaliacao_inicio');
+    const f_avaliacao_fim = $('#f_avaliacao_fim');
+    const boxAvaliacao = $('#boxAvaliacao');
+
+    const formTitulo = $('#formTitulo');
+    const formMsg = $('#formMsg');
+    const btnExcluir = $('#btnExcluir');
+    const btnCancelar = $('#btnCancelar');
+
+    document.getElementById('athleteForm')?.addEventListener('submit', salvarAtleta);
+    btnCancelar?.addEventListener('click', () => go(dashboardView));
+
+    btnExcluir?.addEventListener('click', async () => {
+      const id = athleteId.value;
+      if(!id) return;
+      if(confirm('Excluir este atleta?')){
+        await deleteDoc(doc(db, 'athletes', id));
+        go(dashboardView);
+      }
+    });
+
+    f_situacao?.addEventListener('change', toggleAvaliacaoBox);
+    function toggleAvaliacaoBox(){
+      const showAvaliacao = f_situacao.value === 'Em avaliação';
+      boxAvaliacao.classList.toggle('hidden', !showAvaliacao);
+    }
+
+    function prepararNovo(){
+      formTitulo.textContent = 'Cadastrar atleta';
+      btnExcluir.classList.add('hidden');
+      formMsg.textContent = '';
+      toggleAvaliacaoBox();
+    }
+
+    async function abrirEdicao(id){
+      try{
+        const ref = doc(db, 'athletes', id);
+        const snap = await getDoc(ref);
+        if(!snap.exists()) return;
+        const a = { id: snap.id, ...snap.data() };
+        athleteId.value = a.id || '';
+        f_nome.value = a.name || '';
+        f_posicao.value = a.position || '';
+        f_nasc.value = a.birthdate || '';
+        f_pe.value = a.foot || '';
+        f_categoria.value = a.category || '';
+        f_agente.value = a.agentContact || '';
+        f_status.value = a.status || 'Observação';
+        f_tipo.value = a.contractType || '';
+        f_inicio.value = a.contractStart || '';
+        f_termino.value = a.contractEnd || '';
+        f_contrato.value = a.contractText || '';
+        f_obs.value = a.notes || '';
+
+        f_situacao.value = a.clubSituation || 'Em clube';
+        f_clube_atual.value = a.currentClub || '';
+        f_ultimo_clube.value = a.lastClub || '';
+        f_competicao.value = a.competition || '';
+        f_minutos.value = a.minutesSeason ?? '';
+        f_titulos.value = Array.isArray(a.titles) ? a.titles.join(', ') : (a.titles || '');
+        f_avaliacao_clube.value = a.trialClub || '';
+        f_avaliacao_inicio.value = a.trialStart || '';
+        f_avaliacao_fim.value = a.trialEnd || '';
+
+        formTitulo.textContent = 'Editar atleta';
+        btnExcluir.classList.remove('hidden');
+        formMsg.textContent = '';
+        toggleAvaliacaoBox();
+        go(formView);
+      }catch(err){
+        alert('Erro ao abrir atleta');
+      }
+    }
+
+    function limparFormulario(){
+      athleteId.value = '';
+      f_nome.value = '';
+      f_posicao.value = '';
+      f_nasc.value = '';
+      f_pe.value = '';
+      f_categoria.value = '';
+      f_agente.value = '';
+      f_status.value = 'Observação';
+      f_tipo.value = '';
+      f_inicio.value = '';
+      f_termino.value = '';
+      f_contrato.value = '';
+      f_obs.value = '';
+
+      f_situacao.value = 'Em clube';
+      f_clube_atual.value = '';
+      f_ultimo_clube.value = '';
+      f_competicao.value = '';
+      f_minutos.value = '';
+      f_titulos.value = '';
+      f_avaliacao_clube.value = '';
+      f_avaliacao_inicio.value = '';
+      f_avaliacao_fim.value = '';
+      toggleAvaliacaoBox();
+    }
+
+    async function salvarAtleta(e){
+      e.preventDefault();
+      formMsg.textContent = '';
+      const payload = {
+        name: f_nome.value.trim(),
+        position: f_posicao.value.trim(),
+        birthdate: f_nasc.value || '',
+        foot: f_pe.value || '',
+        category: f_categoria.value || '',
+        agentContact: f_agente.value.trim(),
+        status: f_status.value || 'Observação',
+        contractType: f_tipo.value || '',
+        contractStart: f_inicio.value || '',
+        contractEnd: f_termino.value || '',
+        contractText: f_contrato.value.trim(),
+        notes: f_obs.value.trim(),
+        clubSituation: f_situacao.value || 'Em clube',
+        currentClub: f_clube_atual.value.trim(),
+        lastClub: f_ultimo_clube.value.trim(),
+        competition: f_competicao.value.trim(),
+        minutesSeason: f_minutos.value === '' ? null : Number(f_minutos.value),
+        titles: f_titulos.value.trim() ? f_titulos.value.split(',').map(s=>s.trim()).filter(Boolean) : [],
+        trialClub: f_avaliacao_clube.value.trim(),
+        trialStart: f_avaliacao_inicio.value || '',
+        trialEnd: f_avaliacao_fim.value || '',
+      };
+      try{
+        if(athleteId.value){
+          await setDoc(doc(db, 'athletes', athleteId.value), payload, { merge: true });
+          formMsg.textContent = 'Atualizado com sucesso!';
+        } else {
+          const ref = await addDoc(collection(db, 'athletes'), payload);
+          athleteId.value = ref.id;
+          formMsg.textContent = 'Cadastrado com sucesso!';
+          go(dashboardView);
+        }
+      }catch(err){
+        console.error(err);
+        formMsg.textContent = 'Erro ao salvar.';
+      }
+    }
+
+    // ====== Util ======
+    function escapeHTML(str){
+      return (str||'').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
+    }
+    function calcAge(yyyy_mm_dd){
+      if(!yyyy_mm_dd) return null;
+      const d = new Date(yyyy_mm_dd);
+      if(isNaN(d)) return null;
+      const now = new Date();
+      let age = now.getFullYear() - d.getFullYear();
+      const m = now.getMonth() - d.getMonth();
+      if(m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+      return age;
+    }
+    function fmtDate(yyyy_mm_dd){
+      if(!yyyy_mm_dd) return '';
+      const d = new Date(yyyy_mm_dd+'T00:00:00');
+      if(isNaN(d)) return '';
+      return d.toLocaleDateString('pt-BR');
+    }
+    function monthsUntil(yyyy_mm_dd, fromDate){
+      if(!yyyy_mm_dd) return null;
+      const end = new Date(yyyy_mm_dd+'T00:00:00');
+      if(isNaN(end)) return null;
+      const start = new Date(fromDate);
+      let months = (end.getFullYear()-start.getFullYear())*12 + (end.getMonth()-start.getMonth());
+      if(end.getDate() < start.getDate()) months -= 1;
+      return months;
+    }
+  </script>
 </body>
 </html>
