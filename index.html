@@ -34,6 +34,8 @@
     #profileView .grid > .card:nth-of-type(2){ background:#ecfdf5; border:1px solid #bbf7d0; }
     #profileView .grid > .card:nth-of-type(3){ background:#fff7ed; border:1px solid #fed7aa; }
     #profileView .grid > .card:nth-of-type(4){ background:#f5f3ff; border:1px solid #ddd6fe; }
+    /* Títulos/labels do perfil TODOS em negrito */
+    #profileView .label, #profileView h3, #p_nome_title { font-weight:800 !important; }
   </style>
 </head>
 <body class="bg-slate-50 text-slate-900">
@@ -45,23 +47,23 @@
         Agência de Atletas
       </div>
       <nav class="flex items-center gap-3">
-        <button class="btn btn-ghost" id="navAtletas">Atletas</button>
-        <button class="btn" id="navCadastrar">Cadastrar</button>
+        <!-- mantive apenas info do usuário e sair -->
         <span id="userEmail" class="badge"></span>
         <button class="btn" id="btnSair">Sair</button>
       </nav>
     </div>
   </header>
 
-  <!-- Login / Registro (permanece no DOM, mas o app entra anônimo automaticamente) -->
+  <!-- Login (fica mas a entrada é anônima automática) -->
   <main id="authView" class="min-h-[calc(100vh-64px)] grid place-items-center p-4">
     <div class="card w-full max-w-md overflow-hidden">
       <div class="hero-gradient p-5">
         <h1 id="authTitle" class="text-2xl font-extrabold">Entrar</h1>
-        <p class="text-sm opacity-80">Acesse sua conta para gerenciar atletas.</p>
+        <p class="text-sm opacity-80">Você será conectado como convidado automaticamente.</p>
       </div>
       <div class="p-6">
-        <form id="authForm" class="space-y-4">
+        <p class="text-sm text-slate-600">Se preferir, ainda é possível usar e-mail/senha.</p>
+        <form id="authForm" class="space-y-3 mt-3">
           <div>
             <label class="label">E-mail</label>
             <input id="authEmail" class="input" type="email" />
@@ -71,26 +73,26 @@
             <input id="authPass" class="input" type="password" />
           </div>
           <p id="authError" class="hidden text-red-600 text-sm"></p>
-          <button id="authSubmit" class="btn btn-primary w-full" type="submit">Entrar</button>
+          <button id="authSubmit" class="btn w-full" type="submit">Entrar (opcional)</button>
         </form>
-        <div class="text-center mt-4 text-sm">
-          <button id="toggleMode" class="underline">Não tem conta? Registrar</button>
-        </div>
       </div>
     </div>
   </main>
 
-  <!-- Dashboard / Lista -->
+  <!-- Dashboard / Lista (principal) -->
   <section id="dashboardView" class="hidden max-w-7xl mx-auto px-4 py-6 space-y-4">
     <div class="card hero-gradient p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
       <div>
         <h2 class="text-xl font-extrabold">Atletas</h2>
         <p class="opacity-80 text-sm">Gerencie cadastro, contratos e avaliações</p>
       </div>
-      <button id="btnIrCadastrar" class="btn bg-white text-slate-900 border-white hover:bg-slate-100">Novo atleta</button>
+      <!-- manter apenas o botão Novo atleta -->
+      <button id="btnIrCadastrar" class="btn bg-white text-slate-900 border-white hover:bg-slate-100">
+        Novo atleta
+      </button>
     </div>
 
-    <!-- Filtros -->
+    <!-- Filtros (mantidos) -->
     <div class="card p-4 grid gap-3 md:grid-cols-4">
       <div class="md:col-span-1">
         <label class="label">Buscar</label>
@@ -128,6 +130,7 @@
       </div>
     </div>
 
+    <!-- Lista -->
     <div class="card p-0 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="table w-full text-sm">
@@ -156,7 +159,7 @@
       <div class="flex items-center gap-3">
         <div id="p_avatar" class="w-12 h-12 rounded-full grid place-items-center bg-slate-900 text-white font-extrabold"></div>
         <div>
-          <h2 id="p_nome_title" class="text-xl font-extrabold">—</h2>
+          <h2 id="p_nome_title" class="text-xl">—</h2>
           <div class="muted text-sm" id="p_resumo"></div>
         </div>
       </div>
@@ -170,25 +173,25 @@
       <div class="card p-5">
         <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 100-10 5 5 0 000 10z"/><path fill-rule="evenodd" d="M2 22a10 10 0 1120 0H2z" clip-rule="evenodd"/></svg> Informações básicas</h3>
         <div class="grid grid-cols-2 gap-3">
-          <div><span class="label">Nome</span><div id="p_nome"></div></div>
-          <div><span class="label">Posição</span><div id="p_posicao"></div></div>
-          <div><span class="label">Nascimento</span><div id="p_nasc"></div></div>
-          <div><span class="label">Idade</span><div id="p_idade"></div></div>
-          <div><span class="label">Pé</span><div id="p_pe"></div></div>
-          <div><span class="label">Categoria</span><div id="p_categoria"></div></div>
-          <div class="col-span-2"><span class="label">Agente</span><div id="p_agente"></div></div>
+          <div><span class="label">Nome</span><div id="p_nome" class="font-semibold"></div></div>
+          <div><span class="label">Posição</span><div id="p_posicao" class="font-semibold"></div></div>
+          <div><span class="label">Nascimento</span><div id="p_nasc" class="font-semibold"></div></div>
+          <div><span class="label">Idade</span><div id="p_idade" class="font-semibold"></div></div>
+          <div><span class="label">Pé</span><div id="p_pe" class="font-semibold"></div></div>
+          <div><span class="label">Categoria</span><div id="p_categoria" class="font-semibold"></div></div>
+          <div class="col-span-2"><span class="label">Agente</span><div id="p_agente" class="font-semibold"></div></div>
         </div>
       </div>
       <div class="card p-5">
         <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a1 1 0 00-1 1v2a1 1 0 001 1h1v12a1 1 0 001 1h12a1 1 0 001-1V7h1a1 1 0 001-1V4a1 1 0 00-1-1H4zm4 5h8v2H8V8zm0 4h8v2H8v-2z"/></svg> Carreira</h3>
         <div class="grid grid-cols-2 gap-3">
-          <div><span class="label">Situação</span><div id="p_situacao"></div></div>
-          <div><span class="label">Clube atual</span><div id="p_clube_atual"></div></div>
-          <div><span class="label">Último clube</span><div id="p_ultimo_clube"></div></div>
-          <div><span class="label">Competição</span><div id="p_competicao"></div></div>
-          <div><span class="label">Minutos na temporada</span><div id="p_minutos"></div></div>
-          <div class="col-span-2"><span class="label">Títulos</span><div id="p_titulos"></div></div>
-          <div class="col-span-2"><span class="label">Avaliação</span><div id="p_avaliacao"></div></div>
+          <div><span class="label">Situação</span><div id="p_situacao" class="font-semibold"></div></div>
+          <div><span class="label">Clube atual</span><div id="p_clube_atual" class="font-semibold"></div></div>
+          <div><span class="label">Último clube</span><div id="p_ultimo_clube" class="font-semibold"></div></div>
+          <div><span class="label">Competição</span><div id="p_competicao" class="font-semibold"></div></div>
+          <div><span class="label">Minutos na temporada</span><div id="p_minutos" class="font-semibold"></div></div>
+          <div class="col-span-2"><span class="label">Títulos</span><div id="p_titulos" class="font-semibold"></div></div>
+          <div class="col-span-2"><span class="label">Avaliação</span><div id="p_avaliacao" class="font-semibold"></div></div>
         </div>
       </div>
       <div class="card p-5">
@@ -197,21 +200,21 @@
           <button id="btnToggleContrato" class="btn">Mostrar contrato</button>
         </div>
         <div class="grid grid-cols-2 gap-3">
-          <div><span class="label">Tipo</span><div id="p_tipo"></div></div>
-          <div><span class="label">Status interno</span><div id="p_status"></div></div>
-          <div><span class="label">Início</span><div id="p_inicio"></div></div>
-          <div><span class="label">Término</span><div id="p_termino"></div></div>
+          <div><span class="label">Tipo</span><div id="p_tipo" class="font-semibold"></div></div>
+          <div><span class="label">Status interno</span><div id="p_status" class="font-semibold"></div></div>
+          <div><span class="label">Início</span><div id="p_inicio" class="font-semibold"></div></div>
+          <div><span class="label">Término</span><div id="p_termino" class="font-semibold"></div></div>
           <div class="col-span-2">
             <span class="label">Texto do contrato</span>
             <div id="p_contrato_wrap" class="hidden">
-              <div id="p_contrato" class="whitespace-pre-wrap"></div>
+              <div id="p_contrato" class="whitespace-pre-wrap font-semibold"></div>
             </div>
           </div>
         </div>
       </div>
       <div class="card p-5">
         <h3 class="section-title mb-3"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v2H4zM4 9h16v2H4zM4 14h10v2H4z"/></svg> Observações</h3>
-        <div id="p_obs" class="whitespace-pre-wrap"></div>
+        <div id="p_obs" class="whitespace-pre-wrap font-semibold"></div>
       </div>
     </div>
   </section>
@@ -395,7 +398,7 @@
       getAuth,
       onAuthStateChanged,
       signOut,
-      signInAnonymously,              // <--- login anônimo
+      signInAnonymously,
       signInWithEmailAndPassword,
       createUserWithEmailAndPassword
     } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
@@ -426,26 +429,15 @@
       show(view);
     }
 
-    // ====== Auth UI (mantido, mas o login é automático anônimo) ======
+    // ====== Auth (auto login anônimo) ======
     let mode = 'login';
     const authTitle = $('#authTitle');
     const authEmail = $('#authEmail');
     const authPass = $('#authPass');
     const authError = $('#authError');
-    const toggleMode = $('#toggleMode');
     const authSubmit = $('#authSubmit');
     const userEmail = $('#userEmail');
 
-    toggleMode?.addEventListener('click', () => {
-      mode = mode === 'login' ? 'register' : 'login';
-      authTitle.textContent = mode === 'login' ? 'Entrar' : 'Criar conta';
-      toggleMode.textContent = mode === 'login' ? 'Não tem conta? Registrar' : 'Já tem conta? Entrar';
-      authSubmit.textContent = mode === 'login' ? 'Entrar' : 'Registrar';
-      authError.textContent = '';
-      authError.classList.add('hidden');
-    });
-
-    // (Se o usuário insistir em usar e-mail/senha, ainda funciona)
     $('#authForm')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       authError.classList.add('hidden');
@@ -463,13 +455,8 @@
 
     $('#btnSair')?.addEventListener('click', () => signOut(auth));
 
-    // ====== Navegação superior ======
-    $('#navAtletas')?.addEventListener('click', () => go(dashboardView));
-    $('#navCadastrar')?.addEventListener('click', () => { limparFormulario(); prepararNovo(); go(formView); });
-    $('#btnIrCadastrar')?.addEventListener('click', () => { limparFormulario(); prepararNovo(); go(formView); });
-
-    // ====== Estado de autenticação (AUTO LOGIN ANÔNIMO) ======
-    let unsubLista = null; // para desligar onSnapshot quando sair
+    // ====== Estado de autenticação ======
+    let unsubLista = null;
     onAuthStateChanged(auth, async (u) => {
       try {
         if(u){
