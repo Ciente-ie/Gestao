@@ -1,757 +1,260 @@
-Ciente ie<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Agência de Atletas</title>
-  <meta name="description" content="Gestão de atletas – cadastro + lista + perfil + pesquisa (Firebase)" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestão de Elenco</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    :root { color-scheme: light; }
-    .card { background:#fff; border-radius:16px; box-shadow:0 6px 20px rgba(15,23,42,.08); }
-    .btn { display:inline-flex; gap:8px; align-items:center; justify-content:center; border-radius:12px; padding:10px 14px; font-weight:600; border:1px solid #e2e8f0; }
-    .btn:hover{ background:#f8fafc; }
-    .btn:active{ transform:scale(.99); }
-    .btn-primary{ background:#0f172a; color:#fff; border-color:#0f172a; }
-    .btn-primary:hover{ background:#1e293b; }
-    .btn-ghost{ background:transparent; }
-    .input{ width:100%; border-radius:12px; border:1px solid #cbd5e1; padding:10px 12px; outline:none; }
-    .input:focus{ box-shadow:0 0 0 3px rgba(100,116,139,.25); }
-    .label{ font-size:12px; font-weight:800; color:#475569; display:block; margin-bottom:6px; letter-spacing:.02em; text-transform:uppercase; }
-    .badge{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; background:#f1f5f9; color:#334155; font-size:12px; padding:3px 10px; font-weight:700; border:1px solid #e2e8f0; }
-    .badge.green{ background:#ecfdf5; color:#065f46; border-color:#bbf7d0; }
-    .badge.amber{ background:#fffbeb; color:#92400e; border-color:#fde68a; }
-    .badge.blue{ background:#eff6ff; color:#1e40af; border-color:#bfdbfe; }
-    .chip{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:4px 10px; background:#f8fafc; border:1px solid #e2e8f0; font-size:12px; font-weight:600; }
-    .hero-gradient{ background:linear-gradient(135deg,#0f172a 0%,#334155 100%); color:#fff; }
-    .table thead th{ font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:.06em; }
-    .muted{ color:#64748b; }
-    /* Perfil visual "dados do jogador" */
-    #profileView h3 { font-weight:800 }
-    #p_nome_title { font-weight:800 }
-    .kv { border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
-    .kv .kv-head { background:#0f172a; color:#fff; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:10px 12px; font-size:12px; }
-    .kv .row { display:grid; grid-template-columns: 240px 1fr; gap:12px; padding:10px 12px; border-top:1px solid #e2e8f0; }
-    .kv .row:first-of-type { border-top:0 }
-    .kv .key { font-weight:800; color:#334155; }
-    .kv .val { font-weight:500; color:#0f172a; } /* valores menos fortes */
-    .pill { border-radius:999px; padding:4px 10px; border:1px solid #e2e8f0; background:#f8fafc; font-size:12px; font-weight:700; }
-    .pill.ok{ background:#eafff3; border-color:#bbf7d0; color:#065f46; }
-    .pill.bad{ background:#fff1f2; border-color:#fecdd3; color:#9f1239; }
-    .pill.wait{ background:#f8fafc; border-color:#cbd5e1; color:#334155; }
-    .linkish{ color:#0f172a; text-decoration:underline; font-weight:600; }
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
+    import { 
+      getFirestore, collection, addDoc, onSnapshot, 
+      deleteDoc, doc, updateDoc, getDoc, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
-    /* Editor de listas */
-    .mini-table { border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; }
-    .mini-table .head { background:#f8fafc; display:grid; grid-template-columns: 180px 1fr 140px 1fr 100px; gap:8px; padding:10px 12px; font-size:12px; font-weight:800; color:#475569; }
-    .mini-table .body .row { display:grid; grid-template-columns: 180px 1fr 140px 1fr 100px; gap:8px; padding:10px 12px; border-top:1px solid #e2e8f0; align-items:center; }
-    .club-grid-head { display:grid; grid-template-columns: 180px 1fr 120px; gap:8px; padding:10px 12px; background:#f8fafc; font-size:12px; font-weight:800; color:#475569; }
-    .club-grid-row { display:grid; grid-template-columns: 180px 1fr 120px; gap:8px; padding:10px 12px; border-top:1px solid #e2e8f0; align-items:center; }
-  </style>
+    // 🔥 Config Firebase
+    const firebaseConfig = {
+      apiKey: "COLE_SUA_API_KEY_AQUI",
+      authDomain: "appintegrado-ciente.firebaseapp.com",
+      projectId: "appintegrado-ciente",
+      storageBucket: "appintegrado-ciente.appspot.com",
+      messagingSenderId: "807605952604",
+      appId: "1:807605952604:web:b3cd216aa29be52d66620e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const elencoRef = collection(db, "elenco");
+
+    // 🔹 Elementos
+    const form = document.getElementById("formAtleta");
+    const btnToggle = document.getElementById("btnToggleForm");
+    const tabela = document.getElementById("tabelaAtletas");
+    const filtroAno = document.getElementById("filtroAno");
+    const filtroStatus = document.getElementById("filtroStatus");
+    const contTotal = document.getElementById("totalAtletas");
+    const contAlojados = document.getElementById("totalAlojados");
+    const contAvaliacao = document.getElementById("totalAvaliacao");
+    const contDispensados = document.getElementById("totalDispensados");
+
+    // Alternar formulário
+    btnToggle.onclick = () => form.classList.toggle("hidden");
+
+    // Adicionar/atualizar atleta
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const id = form.idAtleta.value;
+      const data = {
+        nome: form.nome.value,
+        categoria: form.categoria.value,
+        posicao: form.posicao.value,
+        status_principal: form.status_principal.value,
+        alojamento: form.alojamento.value,
+        data_nascimento: form.data_nascimento.value,
+        cidade_natal: form.cidade_natal.value,
+        ultimo_clube: form.ultimo_clube.value,
+        empresario: form.empresario.value,
+        timestamp: serverTimestamp()
+      };
+
+      if (id) await updateDoc(doc(db, "elenco", id), data);
+      else await addDoc(elencoRef, data);
+
+      form.reset();
+      form.idAtleta.value = "";
+      form.classList.add("hidden");
+    };
+
+    // Renderizar atletas
+    onSnapshot(elencoRef, (snapshot) => {
+      const atletas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const anoFiltro = filtroAno.value;
+      const statusFiltro = filtroStatus.value;
+
+      const filtrados = atletas.filter(a => {
+        const ano = a.data_nascimento ? a.data_nascimento.slice(0,4) : "";
+        const anoOk = anoFiltro ? ano === anoFiltro : true;
+        const statusOk = statusFiltro ? a.status_principal === statusFiltro : true;
+        return anoOk && statusOk;
+      });
+
+      // Atualizar contadores
+      const ativos = atletas.filter(a => a.status_principal !== "Dispensado");
+      contTotal.textContent = ativos.length;
+      contAlojados.textContent = atletas.filter(a => a.alojamento === "Alojado").length;
+      contAvaliacao.textContent = atletas.filter(a => a.status_principal === "Em Avaliação").length;
+      contDispensados.textContent = atletas.filter(a => a.status_principal === "Dispensado").length;
+
+      // Atualizar filtro de anos
+      const anos = [...new Set(atletas.map(a => a.data_nascimento?.slice(0,4)).filter(Boolean))].sort();
+      filtroAno.innerHTML = `<option value="">Filtrar por Ano</option>` + anos.map(a => `<option value="${a}">${a}</option>`).join("");
+
+      // Render tabela
+      tabela.innerHTML = filtrados.map(a => {
+        const statusComposto = a.status_principal === "Dispensado"
+          ? "Dispensado"
+          : `${a.status_principal} / ${a.alojamento || "Não Alojado"}`;
+        return `
+          <tr class="border-b hover:bg-gray-50 cursor-pointer" onclick="toggleDetalhes('${a.id}')">
+            <td class="p-2 font-medium text-red-700">${a.nome || "-"}</td>
+            <td class="p-2">${a.posicao || "-"}</td>
+            <td class="p-2">${a.categoria || "-"}</td>
+            <td class="p-2">${statusComposto}</td>
+            <td class="p-2 text-center">
+              <button class="text-blue-600" onclick="editarAtleta(event,'${a.id}')">✏️</button>
+              <button class="text-red-600" onclick="excluirAtleta(event,'${a.id}')">🗑️</button>
+            </td>
+          </tr>
+          <tr id="detalhes-${a.id}" class="hidden bg-gray-50 transition-all duration-300">
+            <td colspan="5" class="p-3 text-sm text-gray-700">
+              <div><b>Data de Nascimento:</b> ${a.data_nascimento || "-"}</div>
+              <div><b>Cidade Natal:</b> ${a.cidade_natal || "-"}</div>
+              <div><b>Último Clube:</b> ${a.ultimo_clube || "-"}</div>
+              <div><b>Empresário:</b> ${a.empresario || "-"}</div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    });
+
+    // Toggle linha de detalhes
+    window.toggleDetalhes = (id) => {
+      const linha = document.getElementById(`detalhes-${id}`);
+      if (linha.classList.contains("hidden")) linha.classList.remove("hidden");
+      else linha.classList.add("hidden");
+    };
+
+    // Editar atleta
+    window.editarAtleta = async (event, id) => {
+      event.stopPropagation();
+      const snap = await getDoc(doc(db, "elenco", id));
+      const a = snap.data();
+      form.idAtleta.value = id;
+      form.nome.value = a.nome || "";
+      form.categoria.value = a.categoria || "";
+      form.posicao.value = a.posicao || "";
+      form.status_principal.value = a.status_principal || "";
+      form.alojamento.value = a.alojamento || "";
+      form.data_nascimento.value = a.data_nascimento || "";
+      form.cidade_natal.value = a.cidade_natal || "";
+      form.ultimo_clube.value = a.ultimo_clube || "";
+      form.empresario.value = a.empresario || "";
+      form.classList.remove("hidden");
+    };
+
+    // Excluir atleta
+    window.excluirAtleta = async (event, id) => {
+      event.stopPropagation();
+      if (confirm("Deseja excluir este atleta?")) {
+        await deleteDoc(doc(db, "elenco", id));
+      }
+    };
+  </script>
 </head>
-<body class="bg-slate-50 text-slate-900">
-  <!-- Navbar -->
-  <header id="navbar" class="hidden border-b border-slate-200 bg-white">
-    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3 font-extrabold">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-slate-900"><path d="M12 2a7 7 0 00-7 7v4a7 7 0 1014 0V9a7 7 0 00-7-7z"/></svg>
-        Agência de Atletas
-      </div>
-      <nav class="flex items-center gap-2">
-        <button id="navDashboard" class="btn">Lista</button>
-        <button id="navSearch" class="btn">Pesquisa</button>
-        <span id="userEmail" class="badge"></span>
-        <button class="btn" id="btnSair">Sair</button>
-      </nav>
-    </div>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <header class="bg-red-700 text-white text-center py-4 shadow-md">
+    <h1 class="text-2xl font-bold">Gestão de Elenco</h1>
   </header>
 
-  <!-- Login (auto anônimo) -->
-  <main id="authView" class="min-h-[calc(100vh-64px)] grid place-items-center p-4">
-    <div class="card w-full max-w-md overflow-hidden">
-      <div class="hero-gradient p-5">
-        <h1 id="authTitle" class="text-2xl font-extrabold">Entrar</h1>
-        <p class="text-sm opacity-80">Você será conectado como convidado automaticamente.</p>
+  <main class="max-w-5xl mx-auto p-4 space-y-6 flex-grow">
+
+    <!-- Contadores -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+      <div class="bg-white p-4 shadow rounded">
+        <h2 class="text-gray-500 text-sm">Total</h2>
+        <p id="totalAtletas" class="text-2xl font-bold text-red-700">0</p>
       </div>
-      <div class="p-6">
-        <p class="text-sm text-slate-600">Se preferir, ainda é possível usar e-mail/senha.</p>
-        <form id="authForm" class="space-y-3 mt-3">
-          <div><label class="label">E-mail</label><input id="authEmail" class="input" type="email" /></div>
-          <div><label class="label">Senha</label><input id="authPass" class="input" type="password" /></div>
-          <p id="authError" class="hidden text-red-600 text-sm"></p>
-          <button id="authSubmit" class="btn w-full" type="submit">Entrar (opcional)</button>
-        </form>
+      <div class="bg-white p-4 shadow rounded">
+        <h2 class="text-gray-500 text-sm">Alojados</h2>
+        <p id="totalAlojados" class="text-2xl font-bold text-red-700">0</p>
       </div>
+      <div class="bg-white p-4 shadow rounded">
+        <h2 class="text-gray-500 text-sm">Em Avaliação</h2>
+        <p id="totalAvaliacao" class="text-2xl font-bold text-red-700">0</p>
+      </div>
+      <div class="bg-white p-4 shadow rounded">
+        <h2 class="text-gray-500 text-sm">Dispensados</h2>
+        <p id="totalDispensados" class="text-2xl font-bold text-gray-500">0</p>
+      </div>
+    </div>
+
+    <!-- Botão e Filtros -->
+    <div class="flex flex-col md:flex-row justify-between items-center gap-3">
+      <button id="btnToggleForm" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded shadow">
+        ➕ Adicionar Atleta
+      </button>
+      <div class="flex gap-2">
+        <select id="filtroAno" class="border p-2 rounded">
+          <option value="">Filtrar por Ano</option>
+        </select>
+        <select id="filtroStatus" class="border p-2 rounded">
+          <option value="">Filtrar por Status</option>
+          <option>Ativo</option>
+          <option>Em Avaliação</option>
+          <option>Dispensado</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Formulário -->
+    <form id="formAtleta" class="hidden bg-white shadow rounded p-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+      <input type="hidden" id="idAtleta" name="idAtleta">
+      <input type="text" id="nome" name="nome" placeholder="Nome" class="border p-2 rounded" required>
+      <input type="text" id="posicao" name="posicao" placeholder="Posição" class="border p-2 rounded" required>
+
+      <select id="categoria" name="categoria" class="border p-2 rounded" required>
+        <option value="">Categoria</option>
+        <option>Sub-15</option>
+        <option>Sub-17</option>
+        <option>Sub-20</option>
+        <option>Profissional</option>
+      </select>
+
+      <select id="status_principal" name="status_principal" class="border p-2 rounded" required>
+        <option value="">Status Principal</option>
+        <option>Ativo</option>
+        <option>Em Avaliação</option>
+        <option>Dispensado</option>
+      </select>
+
+      <select id="alojamento" name="alojamento" class="border p-2 rounded" required>
+        <option value="">Situação de Alojamento</option>
+        <option>Alojado</option>
+        <option>Não Alojado</option>
+      </select>
+
+      <div>
+        <label class="block text-sm text-gray-600 mb-1">Data de Nascimento</label>
+        <input type="date" id="data_nascimento" name="data_nascimento" class="border p-2 rounded w-full">
+      </div>
+
+      <input type="text" id="cidade_natal" name="cidade_natal" placeholder="Cidade Natal" class="border p-2 rounded">
+      <input type="text" id="ultimo_clube" name="ultimo_clube" placeholder="Último Clube" class="border p-2 rounded">
+      <input type="text" id="empresario" name="empresario" placeholder="Empresário (se houver)" class="border p-2 rounded">
+
+      <button class="bg-red-700 hover:bg-red-800 text-white py-2 rounded col-span-full">Salvar</button>
+    </form>
+
+    <!-- Tabela -->
+    <div class="bg-white shadow rounded overflow-x-auto">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-red-700 text-white">
+          <tr>
+            <th class="p-2">Nome</th>
+            <th class="p-2">Posição</th>
+            <th class="p-2">Categoria</th>
+            <th class="p-2">Status</th>
+            <th class="p-2 text-center">⚙️</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaAtletas"></tbody>
+      </table>
     </div>
   </main>
 
-  <!-- Lista principal -->
-  <section id="dashboardView" class="hidden max-w-7xl mx-auto px-4 py-6 space-y-4">
-    <div class="card hero-gradient p-5 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <div>
-        <h2 class="text-xl font-extrabold">Atletas</h2>
-        <p class="opacity-80 text-sm">Gerencie cadastro, contratos e avaliações</p>
-      </div>
-      <button id="btnIrCadastrar" class="btn bg-white text-slate-900 border-white hover:bg-slate-100">Novo atleta</button>
-    </div>
-
-    <!-- Filtros -->
-    <div class="card p-4 grid gap-3 md:grid-cols-5">
-      <div class="md:col-span-2">
-        <label class="label">Buscar</label>
-        <input id="busca" class="input" placeholder="Nome, clube..." />
-      </div>
-      <div>
-        <label class="label">Situação</label>
-        <select id="filtroSituacao" class="input">
-          <option value="">Todas</option>
-          <option>Em clube</option>
-          <option>Sem clube</option>
-          <option>Em avaliação</option>
-        </select>
-      </div>
-      <div>
-        <label class="label">Categoria</label>
-        <select id="filtroCategoria" class="input">
-          <option value="">Todas</option>
-          <option>Sub-11</option><option>Sub-13</option><option>Sub-15</option>
-          <option>Sub-17</option><option>Sub-20</option><option>Profissional</option>
-        </select>
-      </div>
-      <div>
-        <label class="label">Posição</label>
-        <select id="filtroPosicao" class="input">
-          <option value="">Todas</option>
-          <option>Goleiro</option><option>Lateral</option><option>Zagueiro</option>
-          <option>Volante</option><option>Meia</option>
-          <option>Ponta</option><option>Atacante</option>
-        </select>
-      </div>
-      <div>
-        <label class="label">Término Contrato</label>
-        <select id="filtroContrato" class="input">
-          <option value="">Todos</option>
-          <option value="3">Até 3 meses</option>
-          <option value="6">Até 6 meses</option>
-          <option value=">6">Mais de 6 meses</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Lista -->
-    <div class="card p-0 overflow-hidden">
-      <div class="overflow-x-auto">
-        <table class="table w-full text-sm">
-          <thead class="bg-slate-50 border-b">
-            <tr class="text-left text-slate-600">
-              <th class="py-3 px-4">Atleta</th>
-              <th class="px-4">Idade</th>
-              <th class="px-4">Categoria</th>
-              <th class="px-4">Posição</th>
-              <th class="px-4">Situação</th>
-              <th class="px-4">Clube</th>
-              <th class="px-4">Término Contrato</th>
-              <th class="px-4 text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-      <p id="listaVazia" class="hidden py-6 text-center text-slate-500">Nenhum atleta encontrado</p>
-    </div>
-  </section>
-
-  <!-- Perfil -->
-  <section id="profileView" class="hidden max-w-7xl mx-auto px-4 py-6 space-y-4">
-    <div class="card p-5 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div id="p_avatar" class="w-12 h-12 rounded-full grid place-items-center bg-slate-900 text-white font-extrabold"></div>
-        <div>
-          <h2 id="p_nome_title" class="text-xl">—</h2>
-          <div class="muted text-sm" id="p_resumo"></div>
-        </div>
-      </div>
-      <div class="flex gap-2">
-        <select id="favPosicao" class="input w-40">
-          <option value="">Favoritar por posição…</option>
-          <option>Goleiro</option><option>Lateral</option><option>Zagueiro</option>
-          <option>Volante</option><option>Meia</option>
-          <option>Ponta</option><option>Atacante</option>
-        </select>
-        <button id="btnFavoritar" class="btn">Salvar favorito</button>
-        <button id="btnEditarPerfil" class="btn">Editar</button>
-        <button id="btnVoltarLista" class="btn">Voltar</button>
-      </div>
-    </div>
-
-    <div class="grid gap-4 md:grid-cols-2">
-      <div class="kv">
-        <div class="kv-head">DADOS DO JOGADOR</div>
-        <div id="kvPlayer"></div>
-      </div>
-
-      <div class="kv">
-        <div class="kv-head flex items-center justify-between">
-          <span>CONTRATO & STATUS</span>
-          <button id="btnToggleContrato" class="btn btn-ghost text-white border-white/30">Mostrar contrato</button>
-        </div>
-        <div id="kvContrato"></div>
-        <div id="p_contrato_wrap" class="hidden border-t border-slate-200">
-          <div class="row">
-            <div class="key">Texto do contrato</div>
-            <div class="val"><pre id="p_contrato" class="whitespace-pre-wrap font-normal"></pre></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="kv md:col-span-2">
-        <div class="kv-head">HISTÓRICO</div>
-        <div id="kvHistorico"></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Cadastro / Edição -->
-  <section id="formView" class="hidden max-w-7xl mx-auto px-4 py-6">
-    <div class="card p-5 mb-4 hero-gradient">
-      <h2 id="formTitulo" class="text-xl font-extrabold">Cadastrar atleta</h2>
-      <p class="opacity-80 text-sm">Preencha os campos. Campos de avaliação aparecem ao selecionar "Em avaliação".</p>
-    </div>
-
-    <div class="grid gap-4 md:grid-cols-2">
-      <div class="space-y-4">
-        <div class="card p-5">
-          <h3 class="mb-3">Informações básicas</h3>
-          <form id="athleteForm" class="grid grid-cols-2 gap-4">
-            <input type="hidden" id="athleteId" />
-            <div class="col-span-2"><label class="label">Nome*</label><input id="f_nome" class="input" required /></div>
-            <div>
-              <label class="label">Posição</label>
-              <select id="f_posicao" class="input">
-                <option value="">Selecione</option>
-                <option>Goleiro</option><option>Lateral</option><option>Zagueiro</option>
-                <option>Volante</option><option>Meia</option>
-                <option>Ponta</option><option>Atacante</option>
-              </select>
-            </div>
-            <div>
-              <label class="label">Categoria</label>
-              <select id="f_categoria" class="input">
-                <option value="">—</option><option>Sub-11</option><option>Sub-13</option>
-                <option>Sub-15</option><option>Sub-17</option><option>Sub-20</option><option>Profissional</option>
-              </select>
-            </div>
-            <div><label class="label">Data de Nasc.</label><input id="f_nasc" type="date" class="input" /></div>
-            <div><label class="label">Pé</label>
-              <select id="f_pe" class="input"><option value="">Selecione</option><option>Direito</option><option>Esquerdo</option><option>Ambidestro</option></select>
-            </div>
-            <div class="col-span-2"><label class="label">Contato do Agente</label><input id="f_agente" class="input" /></div>
-            <div class="col-span-2"><label class="label">Observações</label><textarea id="f_obs" class="input h-24"></textarea></div>
-          </form>
-        </div>
-
-        <div class="card p-5">
-          <h3 class="mb-3">Carreira</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div><label class="label">Situação</label>
-              <select id="f_situacao" class="input"><option>Em clube</option><option>Sem clube</option><option>Em avaliação</option></select>
-            </div>
-            <div><label class="label">Competição</label><input id="f_competicao" class="input" placeholder="Série B, Paulista Sub-20" /></div>
-            <div><label class="label">Clube atual</label><input id="f_clube_atual" class="input" placeholder="Ex.: Clube XYZ" /></div>
-            <div><label class="label">Último clube</label><input id="f_ultimo_clube" class="input" placeholder="Ex.: Clube Anterior" /></div>
-            <div><label class="label">Minutos na temporada</label><input id="f_minutos" class="input" type="number" min="0" step="1" placeholder="Ex.: 1234" /></div>
-            <div class="col-span-2"><label class="label">Títulos (separe por vírgula)</label><input id="f_titulos" class="input" placeholder="Ex.: Paulista Sub-17 2022, Copa XYZ 2023" /></div>
-
-            <!-- Clubes anteriores -->
-            <div class="col-span-2">
-              <div class="flex items-center justify-between mb-2">
-                <label class="label">Clubes anteriores</label>
-                <button id="btnAddPrevClube" class="btn" type="button">Adicionar linha</button>
-              </div>
-              <div class="mini-table">
-                <div class="club-grid-head">
-                  <div>Período (ex.: 2022-2023)</div>
-                  <div>Clube</div>
-                  <div>Ação</div>
-                </div>
-                <div id="prevClubesWrap" class="body"></div>
-              </div>
-            </div>
-
-            <!-- Avaliações (histórico) -->
-            <div class="col-span-2">
-              <div class="flex items-center justify-between mb-2">
-                <label class="label">Avaliações (histórico)</label>
-                <button id="btnAddAvaliacao" class="btn" type="button">Adicionar linha</button>
-              </div>
-              <div class="mini-table">
-                <div class="head">
-                  <div>Data</div>
-                  <div>Clube</div>
-                  <div>Resultado</div>
-                  <div>Notas</div>
-                  <div>Ação</div>
-                </div>
-                <div id="avaliacoesWrap" class="body"></div>
-              </div>
-            </div>
-
-            <!-- Avaliação atual -->
-            <div class="col-span-2" id="boxAvaliacao">
-              <div class="grid grid-cols-2 gap-4 p-4 rounded-xl border border-sky-200 bg-sky-50">
-                <div><label class="label">Clube da avaliação</label><input id="f_avaliacao_clube" class="input" /></div>
-                <div><label class="label">Início da avaliação</label><input id="f_avaliacao_inicio" type="date" class="input" /></div>
-                <div><label class="label">Fim da avaliação</label><input id="f_avaliacao_fim" type="date" class="input" /></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="space-y-4">
-        <div class="card p-5">
-          <h3 class="mb-3">Contrato</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div><label class="label">Tipo</label>
-              <select id="f_tipo" class="input"><option value="">—</option><option>Profissional</option><option>Formação</option><option>Empréstimo</option><option>Simples</option></select>
-            </div>
-            <div><label class="label">Status interno</label>
-              <select id="f_status" class="input"><option>Observação</option><option>Ativo</option><option>Inativo</option></select>
-            </div>
-            <div><label class="label">Início do contrato</label><input id="f_inicio" type="date" class="input" /></div>
-            <div><label class="label">Término do contrato</label><input id="f_termino" type="date" class="input" /></div>
-            <div class="col-span-2"><label class="label">Texto do contrato</label><textarea id="f_contrato" class="input h-40" placeholder="Cole aqui o texto do contrato (opcional)"></textarea></div>
-          </div>
-        </div>
-
-        <div class="card p-5 flex items-center justify-between gap-3">
-          <div class="muted text-sm">Salve para concluir as alterações</div>
-          <div class="flex gap-2">
-            <button id="btnSalvar" class="btn btn-primary" type="submit" form="athleteForm">Salvar</button>
-            <button id="btnCancelar" class="btn" type="button">Cancelar</button>
-            <button id="btnExcluir" class="btn">Excluir</button>
-          </div>
-        </div>
-        <p id="formMsg" class="text-sm"></p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Pesquisa de atletas e favoritos -->
-  <section id="searchView" class="hidden max-w-7xl mx-auto px-4 py-6 space-y-4">
-    <div class="card hero-gradient p-5">
-      <h2 class="text-xl font-extrabold">Pesquisa em outras plataformas</h2>
-      <p class="opacity-80 text-sm">Use os atalhos abaixo para abrir as plataformas em nova aba. Depois, salve favoritos por posição.</p>
-    </div>
-
-    <div class="card p-5">
-      <div class="grid md:grid-cols-3 gap-3 items-end">
-        <div><label class="label">Nome do atleta</label><input id="qNome" class="input" placeholder="Ex.: Endrick" /></div>
-        <div>
-          <label class="label">Abrir plataformas</label>
-          <div class="flex flex-wrap gap-2">
-            <a id="openTransfermarkt" class="btn" target="_blank" rel="noopener">Transfermarkt</a>
-            <a id="openSofascore" class="btn" target="_blank" rel="noopener">Sofascore</a>
-            <a id="openGoogle" class="btn" target="_blank" rel="noopener">Google</a>
-          </div>
-        </div>
-        <div class="md:text-right">
-          <label class="label">—</label>
-          <button id="btnIrFavoritos" class="btn">Ir para favoritos</button>
-        </div>
-      </div>
-    </div>
-
-    <div class="card p-5">
-      <h3 class="mb-3">Salvar atleta como favorito por posição</h3>
-      <div class="grid md:grid-cols-5 gap-3">
-        <div class="md:col-span-2"><label class="label">Nome</label><input id="fav_nome" class="input" placeholder="Nome do atleta" /></div>
-        <div><label class="label">Posição</label>
-          <select id="fav_posicao" class="input">
-            <option>Goleiro</option><option>Lateral</option><option>Zagueiro</option>
-            <option>Volante</option><option>Meia</option>
-            <option>Ponta</option><option>Atacante</option>
-          </select>
-        </div>
-        <div class="md:col-span-2"><label class="label">Link da fonte (opcional)</label><input id="fav_link" class="input" placeholder="URL da plataforma" /></div>
-        <div class="md:col-span-5"><label class="label">Observações (opcional)</label><input id="fav_obs" class="input" placeholder="Resumo, pontos fortes..." /></div>
-        <div><label class="label">Associar atleta da base (opcional)</label><select id="fav_athleteId" class="input"></select></div>
-        <div class="md:col-span-4 flex items-end justify-end"><button id="btnSalvarFavorito" class="btn btn-primary">Salvar favorito</button></div>
-      </div>
-    </div>
-
-    <div class="card p-0 overflow-hidden">
-      <div class="p-4 flex items-center justify-between">
-        <h3 class="text-lg font-extrabold">Favoritos por posição</h3>
-        <select id="favFiltroPosicao" class="input w-48">
-          <option value="">Todas posições</option>
-          <option>Goleiro</option><option>Lateral</option><option>Zagueiro</option>
-          <option>Volante</option><option>Meia</option>
-          <option>Ponta</option><option>Atacante</option>
-        </select>
-      </div>
-      <div id="favLista" class="divide-y"></div>
-      <p id="favVazio" class="hidden py-6 text-center text-slate-500">Nenhum favorito salvo</p>
-    </div>
-  </section>
-
-  <!-- Firebase & App -->
-  <script type="module">
-    const firebaseConfig = {
-      apiKey: "AIzaSyCSxaH-QFQbhrCttS-J8KmVN1MXmjXqY1s",
-      authDomain: "meu-scout-pro.firebaseapp.com",
-      projectId: "meu-scout-pro",
-      storageBucket: "meu-scout-pro.firebasestorage.app",
-      messagingSenderId: "303977649743",
-      appId: "1:303977649743:web:4e81e55c7180390ec97c3a"
-    };
-
-    import { initializeApp, getApps } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut, signInAnonymously, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-    import { getFirestore, collection, addDoc, doc, setDoc, getDoc, deleteDoc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
-
-    const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    // Helpers
-    const $ = (s)=>document.querySelector(s);
-    const show=(e)=>e.classList.remove('hidden');
-    const hide=(e)=>e.classList.add('hidden');
-    const navbar=$('#navbar'), authView=$('#authView'), dashboardView=$('#dashboardView'), formView=$('#formView'), profileView=$('#profileView'), searchView=$('#searchView');
-    function go(view){ [authView,dashboardView,formView,profileView,searchView].forEach(hide); show(view); }
-
-    $('#navDashboard')?.addEventListener('click', ()=>go(dashboardView));
-    $('#navSearch')?.addEventListener('click', ()=>{ fillFavAthleteSelect(); go(searchView); });
-
-    // Auth
-    const authEmail=$('#authEmail'), authPass=$('#authPass'), authError=$('#authError'), userEmail=$('#userEmail');
-    $('#authForm')?.addEventListener('submit', async (e)=>{
-      e.preventDefault(); authError.classList.add('hidden');
-      try{ await signInWithEmailAndPassword(auth, authEmail.value, authPass.value); }
-      catch(err){ try{ await createUserWithEmailAndPassword(auth, authEmail.value, authPass.value); }
-        catch(err2){ authError.textContent=err2.message||'Erro ao autenticar'; authError.classList.remove('hidden'); } }
-    });
-    $('#btnSair')?.addEventListener('click', ()=>signOut(auth));
-
-    let unsubLista=null, unsubFavs=null;
-    onAuthStateChanged(auth, async (u)=>{
-      try{
-        if(u){ userEmail.textContent=u.isAnonymous?'Convidado':(u.email||''); show(navbar); go(dashboardView); ouvirLista(); ouvirFavoritos(); configurarPesquisaLinks(); }
-        else{ await signInAnonymously(auth); }
-      }catch(err){ hide(navbar); go(authView); }
-    });
-
-    // LISTA
-    const busca=$('#busca'), filtroSituacao=$('#filtroSituacao'), filtroCategoria=$('#filtroCategoria'), filtroContrato=$('#filtroContrato'), filtroPosicao=$('#filtroPosicao');
-    const tableBody=$('#tableBody'), listaVazia=$('#listaVazia'); let lista=[];
-    [busca,filtroSituacao,filtroCategoria,filtroContrato,filtroPosicao].forEach(el=>el?.addEventListener('input', renderLista));
-
-    function renderLista(){
-      const q=(busca?.value||'').toLowerCase(), sit=filtroSituacao?.value, cat=filtroCategoria?.value, pos=filtroPosicao?.value, prazo=filtroContrato?.value;
-      const now=new Date();
-      const filtered=lista.filter(a=>{
-        const textMatch=( (a.name||'').toLowerCase().includes(q) || (a.position||'').toLowerCase().includes(q) || (a.currentClub||'').toLowerCase().includes(q) );
-        const sitMatch=!sit || (a.clubSituation===sit);
-        const catMatch=!cat || (a.category===cat);
-        const posMatch=!pos || ((a.position||'')===pos);
-        let prazoMatch=true;
-        if(prazo){ const months=monthsUntil(a.contractEnd, now);
-          if(prazo==='3') prazoMatch=(months!==null && months<=3);
-          else if(prazo==='6') prazoMatch=(months!==null && months<=6);
-          else if(prazo==='>6') prazoMatch=(months!==null && months>6);
-        }
-        return textMatch && sitMatch && catMatch && posMatch && prazoMatch;
-      });
-      tableBody.innerHTML='';
-      filtered.forEach(a=>{
-        const idade=calcAge(a.birthdate);
-        const initials=(a.name||'').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase()||'A';
-        const badgeCls=a.clubSituation==='Em avaliação'?'badge blue':(a.clubSituation==='Em clube'?'badge green':'badge amber');
-        const tr=document.createElement('tr'); tr.className='border-b last:border-none';
-        tr.innerHTML=`
-          <td class="py-3 px-4 font-medium">
-            <div class="flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full grid place-items-center bg-slate-900 text-white text-xs font-extrabold">${initials}</div>
-              <button class="underline" data-profile="${a.id}">${escapeHTML(a.name||'')}</button>
-            </div>
-          </td>
-          <td class="px-4">${idade ?? '—'}</td>
-          <td class="px-4"><span class="chip">${escapeHTML(a.category || '—')}</span></td>
-          <td class="px-4">${escapeHTML(a.position||'')}</td>
-          <td class="px-4">${a.clubSituation==='Em avaliação'?`<button class="${badgeCls}" data-eval="${a.id}">Em avaliação</button>`:`<span class="${badgeCls}">${escapeHTML(a.clubSituation||'—')}</span>`}</td>
-          <td class="px-4">${escapeHTML(a.currentClub||'—')}</td>
-          <td class="px-4">${fmtDate(a.contractEnd)||'—'}</td>
-          <td class="px-4 text-right"><button class="btn" data-open="${a.id}">Editar</button></td>`;
-        tableBody.appendChild(tr);
-      });
-      listaVazia.classList.toggle('hidden', filtered.length!==0);
-    }
-
-    function ouvirLista(){
-      const qref=query(collection(db,'athletes'), orderBy('name'));
-      if(typeof unsubLista==='function') unsubLista();
-      unsubLista=onSnapshot(qref, (snap)=>{ lista=[]; snap.forEach(d=>lista.push({id:d.id, ...d.data()})); renderLista(); });
-    }
-
-    tableBody?.addEventListener('click', async (e)=>{
-      const evalBtn=e.target.closest('[data-eval]'); if(evalBtn){ const id=evalBtn.getAttribute('data-eval'); const a=lista.find(x=>x.id===id);
-        alert(`Clube da avaliação: ${a?.trialClub||'—'}\nInício: ${fmtDate(a?.trialStart)||'—'}\nFim: ${fmtDate(a?.trialEnd)||'—'}`); return; }
-      const profBtn=e.target.closest('[data-profile]'); if(profBtn){ const id=profBtn.getAttribute('data-profile'); abrirPerfil(id); return; }
-      const btn=e.target.closest('[data-open]'); if(!btn) return; const id=btn.getAttribute('data-open'); await abrirEdicao(id);
-    });
-
-    // PERFIL
-    const p_nome_title=$('#p_nome_title'), p_resumo=$('#p_resumo'), p_avatar=$('#p_avatar');
-    const btnEditarPerfil=$('#btnEditarPerfil'), btnVoltarLista=$('#btnVoltarLista');
-    const btnFavoritar=$('#btnFavoritar'), favPosicao=$('#favPosicao');
-    const kvPlayer=$('#kvPlayer'), kvContrato=$('#kvContrato'), kvHistorico=$('#kvHistorico');
-    const p_contrato_wrap=$('#p_contrato_wrap'), p_contrato=$('#p_contrato'), btnToggleContrato=$('#btnToggleContrato');
-    btnVoltarLista?.addEventListener('click', ()=>go(dashboardView));
-    btnEditarPerfil?.addEventListener('click', ()=>{ if(currentProfileId) abrirEdicao(currentProfileId); });
-    btnToggleContrato?.addEventListener('click', ()=>{
-      const hidden=p_contrato_wrap.classList.contains('hidden');
-      p_contrato_wrap.classList.toggle('hidden', !hidden?true:false);
-      if(hidden){ p_contrato_wrap.classList.remove('hidden'); btnToggleContrato.textContent='Ocultar contrato'; }
-      else{ p_contrato_wrap.classList.add('hidden'); btnToggleContrato.textContent='Mostrar contrato'; }
-    });
-    let currentProfileId=null, currentProfileData=null;
-
-    async function abrirPerfil(id){
-      const ref=doc(db,'athletes',id); const snap=await getDoc(ref); if(!snap.exists()) return;
-      const a={id:snap.id, ...snap.data() }; currentProfileId=a.id; currentProfileData=a;
-      const initials=(a.name||'').split(' ').map(s=>s[0]).slice(0,2).join('').toUpperCase()||'A';
-      p_avatar.textContent=initials; p_nome_title.textContent=a.name||'—';
-      p_resumo.textContent=`${a.position||'—'} • ${a.category||'—'} • ${a.currentClub||'Sem clube'}`;
-
-      // DADOS DO JOGADOR (agora com Último clube e Minutos)
-      renderKV(kvPlayer,[
-        ['Nome completo', a.name],
-        ['Data de nascimento / Idade', a.birthdate ? `${fmtDate(a.birthdate)} (${calcAge(a.birthdate)??'—'})` : ''],
-        ['Local de nascimento', a.birthplace||''],
-        ['Altura', a.height||''],
-        ['Nacionalidade', a.citizenship||''],
-        ['Posição', a.position||''],
-        ['Pé', a.foot||''],
-        ['Agente', a.agentContact||''],
-        ['Clube atual', a.currentClub||''],
-        ['Último clube', a.lastClub||''],
-        ['Minutos na temporada', a.minutesSeason??''],
-        ['Fornecedor (outfitter)', a.outfitter||''],
-        ['Redes sociais', a.social||'']
-      ]);
-
-      // CONTRATO & STATUS (agora com Início/Término do contrato e sem último/minutos)
-      renderKV(kvContrato,[
-        ['Tipo de contrato', a.contractType||''],
-        ['Status interno', a.status||''],
-        ['Competição', a.competition||''],
-        ['Início do contrato', a.contractStart?fmtDate(a.contractStart):''],
-        ['Término do contrato', a.contractEnd?fmtDate(a.contractEnd):''],
-        ['Títulos', Array.isArray(a.titles)?a.titles.join(', '):(a.titles||'')],
-        ['Situação', a.clubSituation||'']
-      ]);
-      p_contrato.textContent = a.contractText || '';
-      if(!p_contrato_wrap.classList.contains('hidden')){ p_contrato_wrap.classList.add('hidden'); btnToggleContrato.textContent='Mostrar contrato'; }
-
-      kvHistorico.innerHTML='';
-      const prev=(a.previousClubs||[]).filter(Boolean);
-      const evals=(a.evaluations||[]);
-      if(prev.length){ kvHistorico.appendChild(kvRow('Clubes anteriores', prev.join(' • '))); }
-      if(evals.length){
-        const chips=evals.map(ev=>{
-          const cls = ev.result==='Aprovado'?'pill ok':(ev.result==='Reprovado'?'pill bad':'pill wait');
-          return `<span class="${cls}">${(ev.date||'—')} • ${(ev.club||'—')} • ${(ev.result||'—')}</span>`;
-        }).join(' ');
-        const div=document.createElement('div'); div.className='row';
-        div.innerHTML=`<div class="key">Avaliações</div><div class="val flex flex-wrap gap-2">${chips}</div>`;
-        kvHistorico.appendChild(div);
-      }
-      if(!prev.length && !evals.length){ kvHistorico.appendChild(kvRow('—', 'Sem histórico registrado')); }
-      go(profileView);
-    }
-
-    function renderKV(container, items){
-      container.innerHTML='';
-      items.forEach(([k,v])=>{
-        const val = (v===0 || v) ? String(v) : '';
-        if(val.trim()==='') return;
-        container.appendChild(kvRow(k,val));
-      });
-    }
-    function kvRow(k,v){
-      const row=document.createElement('div'); row.className='row';
-      row.innerHTML=`<div class="key">${escapeHTML(k)}</div><div class="val whitespace-pre-wrap">${escapeHTML(v)}</div>`;
-      return row;
-    }
-
-    btnFavoritar?.addEventListener('click', async ()=>{
-      if(!currentProfileData || !favPosicao.value){ alert('Selecione a posição para favoritar.'); return; }
-      try{
-        await addDoc(collection(db,'favorites'),{
-          name: currentProfileData.name || '',
-          position: favPosicao.value,
-          linkedAthleteId: currentProfileId,
-          sourceUrl: '',
-          notes: `Favoritado a partir do perfil em ${new Date().toLocaleDateString('pt-BR')}`,
-          createdAt: serverTimestamp()
-        });
-        alert('Favorito salvo!');
-      }catch(err){ alert('Erro ao salvar favorito'); }
-    });
-
-    // FORM
-    const athleteId=$('#athleteId'), f_nome=$('#f_nome'), f_posicao=$('#f_posicao'), f_nasc=$('#f_nasc'), f_pe=$('#f_pe'), f_categoria=$('#f_categoria'), f_agente=$('#f_agente'), f_status=$('#f_status'), f_tipo=$('#f_tipo'), f_inicio=$('#f_inicio'), f_termino=$('#f_termino'), f_contrato=$('#f_contrato'), f_obs=$('#f_obs');
-    const f_situacao=$('#f_situacao'), f_clube_atual=$('#f_clube_atual'), f_ultimo_clube=$('#f_ultimo_clube'), f_competicao=$('#f_competicao'), f_minutos=$('#f_minutos'), f_titulos=$('#f_titulos');
-    const boxAvaliacao=$('#boxAvaliacao'), f_avaliacao_clube=$('#f_avaliacao_clube'), f_avaliacao_inicio=$('#f_avaliacao_inicio'), f_avaliacao_fim=$('#f_avaliacao_fim');
-    const prevClubesWrap=$('#prevClubesWrap'), btnAddPrevClube=$('#btnAddPrevClube');
-    const avaliacoesWrap=$('#avaliacoesWrap'), btnAddAvaliacao=$('#btnAddAvaliacao');
-    const formTitulo=$('#formTitulo'), formMsg=$('#formMsg'), btnExcluir=$('#btnExcluir'), btnCancelar=$('#btnCancelar');
-
-    document.getElementById('athleteForm')?.addEventListener('submit', salvarAtleta);
-    btnCancelar?.addEventListener('click', ()=>go(dashboardView));
-    btnExcluir?.addEventListener('click', async ()=>{ const id=athleteId.value; if(!id) return; if(confirm('Excluir este atleta?')){ await deleteDoc(doc(db,'athletes',id)); go(dashboardView); } });
-    f_situacao?.addEventListener('change', toggleAvaliacaoBox);
-    function toggleAvaliacaoBox(){ boxAvaliacao.classList.toggle('hidden', f_situacao.value!=='Em avaliação'); }
-
-    function addPrevClubeItem(data={periodo:'', clube:''}){
-      const row=document.createElement('div'); row.className='club-grid-row';
-      row.innerHTML=`
-        <input class="input clubPeriodo" placeholder="Ex.: 2022-2023" value="${escapeAttr(data.periodo||'')}" />
-        <input class="input clubNome" placeholder="Ex.: Clube ABC" value="${escapeAttr(data.clube||'')}" />
-        <button class="btn btn-ghost delPrev" type="button">Remover</button>`;
-      row.querySelector('.delPrev').addEventListener('click', ()=>row.remove());
-      prevClubesWrap.appendChild(row);
-    }
-    btnAddPrevClube?.addEventListener('click', ()=>addPrevClubeItem({}));
-
-    function addAvaliacaoItem(data={date:'', club:'', result:'Aguardando', notes:''}){
-      const row=document.createElement('div'); row.className='row';
-      row.innerHTML=`
-        <input type="date" class="input avData" value="${data.date||''}" />
-        <input class="input avClube" placeholder="Ex.: Clube XYZ" value="${escapeAttr(data.club||'')}" />
-        <select class="input avRes">
-          <option ${data.result==='Aprovado'?'selected':''}>Aprovado</option>
-          <option ${data.result==='Reprovado'?'selected':''}>Reprovado</option>
-          <option ${(!data.result || data.result==='Aguardando')?'selected':''}>Aguardando</option>
-        </select>
-        <input class="input avNotes" placeholder="Observações" value="${escapeAttr(data.notes||'')}" />
-        <button class="btn btn-ghost delAv" type="button">Remover</button>`;
-      row.querySelector('.delAv').addEventListener('click', ()=>row.remove());
-      avaliacoesWrap.appendChild(row);
-    }
-    btnAddAvaliacao?.addEventListener('click', ()=>addAvaliacaoItem({}));
-
-    function prepararNovo(){
-      formTitulo.textContent='Cadastrar atleta'; btnExcluir.classList.add('hidden'); formMsg.textContent=''; prevClubesWrap.innerHTML=''; avaliacoesWrap.innerHTML=''; toggleAvaliacaoBox();
-    }
-    async function abrirEdicao(id){
-      const ref=doc(db,'athletes',id); const snap=await getDoc(ref); if(!snap.exists()) return;
-      const a={id:snap.id, ...snap.data()};
-      athleteId.value=a.id||''; f_nome.value=a.name||''; f_posicao.value=a.position||''; f_nasc.value=a.birthdate||''; f_pe.value=a.foot||''; f_categoria.value=a.category||''; f_agente.value=a.agentContact||''; f_status.value=a.status||'Observação'; f_tipo.value=a.contractType||''; f_inicio.value=a.contractStart||''; f_termino.value=a.contractEnd||''; f_contrato.value=a.contractText||''; f_obs.value=a.notes||'';
-      f_situacao.value=a.clubSituation||'Em clube'; f_clube_atual.value=a.currentClub||''; f_ultimo_clube.value=a.lastClub||''; f_competicao.value=a.competition||''; f_minutos.value=a.minutesSeason??''; f_titulos.value=Array.isArray(a.titles)?a.titles.join(', '):(a.titles||'');
-      prevClubesWrap.innerHTML='';
-      (a.previousClubs || []).forEach(c => { let periodo='', clube=c; const m=c.match(/\((.*?)\)$/); if(m){ periodo=m[1]; clube=c.replace(/\s*\(.*\)\s*$/,'').trim(); } addPrevClubeItem({ periodo, clube }); });
-      avaliacoesWrap.innerHTML=''; (a.evaluations || []).forEach(ev => addAvaliacaoItem(ev));
-      f_avaliacao_clube.value=a.trialClub||''; f_avaliacao_inicio.value=a.trialStart||''; f_avaliacao_fim.value=a.trialEnd||'';
-      formTitulo.textContent='Editar atleta'; btnExcluir.classList.remove('hidden'); formMsg.textContent=''; toggleAvaliacaoBox(); go(formView);
-    }
-
-    function limparFormulario(){
-      athleteId.value=''; f_nome.value=''; f_posicao.value=''; f_nasc.value=''; f_pe.value=''; f_categoria.value=''; f_agente.value=''; f_status.value='Observação'; f_tipo.value=''; f_inicio.value=''; f_termino.value=''; f_contrato.value=''; f_obs.value='';
-      f_situacao.value='Em clube'; f_clube_atual.value=''; f_ultimo_clube.value=''; f_competicao.value=''; f_minutos.value=''; f_titulos.value='';
-      prevClubesWrap.innerHTML=''; avaliacoesWrap.innerHTML=''; f_avaliacao_clube.value=''; f_avaliacao_inicio.value=''; f_avaliacao_fim.value=''; toggleAvaliacaoBox();
-    }
-
-    async function salvarAtleta(e){
-      e.preventDefault(); formMsg.textContent='';
-
-      const prevClubs = Array.from(prevClubesWrap.querySelectorAll('.club-grid-row')).map(row => {
-        const periodo = row.querySelector('.clubPeriodo')?.value.trim() || '';
-        const clube = row.querySelector('.clubNome')?.value.trim() || '';
-        if(!periodo && !clube) return null;
-        return clube ? (periodo ? `${clube} (${periodo})` : clube) : periodo;
-      }).filter(Boolean);
-
-      const evals = Array.from(avaliacoesWrap.querySelectorAll('.row')).map(row => ({
-        date: row.querySelector('.avData')?.value || '',
-        club: row.querySelector('.avClube')?.value.trim() || '',
-        result: row.querySelector('.avRes')?.value || 'Aguardando',
-        notes: row.querySelector('.avNotes')?.value.trim() || ''
-      })).filter(e => e.date || e.club || e.notes);
-
-      const payload={
-        name:f_nome.value.trim(),
-        position:f_posicao.value.trim(),
-        birthdate:f_nasc.value||'',
-        foot:f_pe.value||'',
-        category:f_categoria.value||'',
-        agentContact:f_agente.value.trim(),
-        status:f_status.value||'Observação',
-        contractType:f_tipo.value||'',
-        contractStart:f_inicio.value||'',
-        contractEnd:f_termino.value||'',
-        contractText:f_contrato.value.trim(),
-        notes:f_obs.value.trim(),
-        clubSituation:f_situacao.value||'Em clube',
-        currentClub:f_clube_atual.value.trim(),
-        lastClub:f_ultimo_clube.value.trim(),
-        competition:f_competicao.value.trim(),
-        minutesSeason:f_minutos.value===''?null:Number(f_minutos.value),
-        titles:f_titulos.value.trim()?f_titulos.value.split(',').map(s=>s.trim()).filter(Boolean):[],
-        trialClub:f_avaliacao_clube.value.trim(),
-        trialStart:f_avaliacao_inicio.value||'',
-        trialEnd:f_avaliacao_fim.value||'',
-        previousClubs: prevClubs,
-        evaluations: evals
-      };
-
-      try{
-        if(athleteId.value){ await setDoc(doc(db,'athletes',athleteId.value), payload, {merge:true}); formMsg.textContent='Atualizado com sucesso!'; }
-        else { const ref=await addDoc(collection(db,'athletes'), payload); athleteId.value=ref.id; formMsg.textContent='Cadastrado com sucesso!'; go(dashboardView); }
-      }catch(err){ console.error(err); formMsg.textContent='Erro ao salvar.'; }
-    }
-
-    // Pesquisa & Favoritos (sem Soccerway)
-    const qNome=$('#qNome'); const openTransfermarkt=$('#openTransfermarkt'); const openSofascore=$('#openSofascore'); const openGoogle=$('#openGoogle'); const btnIrFavoritos=$('#btnIrFavoritos');
-    function configurarPesquisaLinks(){
-      function build(){ const q=encodeURIComponent(qNome.value.trim());
-        openTransfermarkt.href=q?`https://www.transfermarkt.com/schnellsuche/ergebnis/schnellsuche?query=${q}`:'#';
-        openSofascore.href=q?`https://www.sofascore.com/pt-BR/search/all/${q}`:'#';
-        openGoogle.href=q?`https://www.google.com/search?q=${q}+jogador`:'#'; }
-      qNome?.addEventListener('input', build); build();
-    }
-    btnIrFavoritos?.addEventListener('click', ()=>{ document.querySelector('#favFiltroPosicao').value=''; renderFavoritos(); window.scrollTo({ top: document.querySelector('#favLista').offsetTop-80, behavior:'smooth'}); });
-
-    const fav_nome=$('#fav_nome'), fav_posicao=$('#fav_posicao'), fav_link=$('#fav_link'), fav_obs=$('#fav_obs'), fav_athleteId=$('#fav_athleteId'), btnSalvarFavorito=$('#btnSalvarFavorito');
-    function fillFavAthleteSelect(){ fav_athleteId.innerHTML='<option value="">— Não associar —</option>'; lista.forEach(a=>{ const opt=document.createElement('option'); opt.value=a.id; opt.textContent=a.name; fav_athleteId.appendChild(opt); }); }
-    btnSalvarFavorito?.addEventListener('click', async ()=>{
-      if(!fav_nome.value.trim()){ alert('Informe o nome do atleta'); return; }
-      try{ await addDoc(collection(db,'favorites'),{ name:fav_nome.value.trim(), position:fav_posicao.value, sourceUrl:fav_link.value.trim(), notes:fav_obs.value.trim(), linkedAthleteId:fav_athleteId.value||'', createdAt: serverTimestamp() }); fav_nome.value=''; fav_link.value=''; fav_obs.value=''; fav_athleteId.value=''; alert('Favorito salvo!'); }catch(err){ alert('Erro ao salvar favorito'); }
-    });
-
-    const favLista=$('#favLista'), favVazio=$('#favVazio'), favFiltroPosicao=$('#favFiltroPosicao'); favFiltroPosicao?.addEventListener('input', renderFavoritos);
-    let favoritos=[];
-    function ouvirFavoritos(){ if(typeof unsubFavs==='function') unsubFavs(); const qref=query(collection(db,'favorites'), orderBy('position')); unsubFavs=onSnapshot(qref,(snap)=>{ favoritos=[]; snap.forEach(d=>favoritos.push({id:d.id, ...d.data()})); renderFavoritos(); }); }
-    function renderFavoritos(){ const pos=favFiltroPosicao.value; const items=favoritos.filter(f=>!pos || f.position===pos);
-      favLista.innerHTML=''; if(items.length===0){ favVazio.classList.remove('hidden'); return;} else { favVazio.classList.add('hidden'); }
-      const groups={}; items.forEach(f=>{ if(!groups[f.position]) groups[f.position]=[]; groups[f.position].push(f); });
-      Object.keys(groups).forEach(position=>{ const header=document.createElement('div'); header.className='px-4 py-2 bg-slate-50 border-t font-bold'; header.textContent=position; favLista.appendChild(header);
-        groups[position].forEach(f=>{ const row=document.createElement('div'); row.className='px-4 py-3 flex items-center justify-between';
-          row.innerHTML=`<div class="space-y-1"><div class="font-semibold">${escapeHTML(f.name||'')}</div><div class="text-sm muted">${f.sourceUrl?'<a class="linkish" target="_blank" rel="noopener" href="'+escapeAttr(f.sourceUrl)+'">abrir fonte</a> • ':''}${f.notes?escapeHTML(f.notes)+' • ':''}${f.linkedAthleteId?'<span class="badge">associado</span>':''}</div></div><div class="flex gap-2"><button class="btn" data-fav-open="${f.linkedAthleteId||''}" ${f.linkedAthleteId?'':'disabled'}>Ver perfil</button><button class="btn" data-fav-del="${f.id}">Excluir</button></div>`;
-          favLista.appendChild(row); }); });
-    }
-    favLista?.addEventListener('click', async (e)=>{ const del=e.target.closest('[data-fav-del]'); if(del){ const id=del.getAttribute('data-fav-del'); if(confirm('Excluir favorito?')) await deleteDoc(doc(db,'favorites',id)); return; } const open=e.target.closest('[data-fav-open]'); if(open){ const id=open.getAttribute('data-fav-open'); if(id) abrirPerfil(id); } });
-
-    // Globais
-    document.getElementById('btnIrCadastrar')?.addEventListener('click', ()=>{ limparFormulario(); prepararNovo(); go(formView); });
-
-    // Utils
-    function escapeHTML(str=''){ return (str||'').replace(/[&<>"']/g, (m)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-    function escapeAttr(str=''){ return (str||'').replace(/"/g,'&quot;'); }
-    function calcAge(yyyy_mm_dd){ if(!yyyy_mm_dd) return null; const d=new Date(yyyy_mm_dd); if(isNaN(d)) return null; const now=new Date(); let age=now.getFullYear()-d.getFullYear(); const m=now.getMonth()-d.getMonth(); if(m<0||(m===0&&now.getDate()<d.getDate())) age--; return age; }
-    function fmtDate(yyyy_mm_dd){ if(!yyyy_mm_dd) return ''; const d=new Date(yyyy_mm_dd+'T00:00:00'); if(isNaN(d)) return ''; return d.toLocaleDateString('pt-BR'); }
-    function monthsUntil(yyyy_mm_dd, fromDate){ if(!yyyy_mm_dd) return null; const end=new Date(yyyy_mm_dd+'T00:00:00'); if(isNaN(end)) return null; const start=new Date(fromDate); let months=(end.getFullYear()-start.getFullYear())*12+(end.getMonth()-start.getMonth()); if(end.getDate()<start.getDate()) months-=1; return months; }
-  </script>
+  <footer class="text-center text-gray-400 text-sm py-4">
+    Powered by <span class="font-semibold">Ciente IE</span>
+  </footer>
 </body>
 </html>
