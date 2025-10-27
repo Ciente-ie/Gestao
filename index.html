@@ -30,12 +30,14 @@
     const form = document.getElementById("formAtleta");
     const btnToggle = document.getElementById("btnToggleForm");
     const tabela = document.getElementById("tabelaAtletas");
-    const filtroAno = document.getElementById("filtroAno");
     const filtroStatus = document.getElementById("filtroStatus");
+    const filtroAlojamento = document.getElementById("filtroAlojamento");
+    const filtroCategoria = document.getElementById("filtroCategoria");
     const contTotal = document.getElementById("totalAtletas");
     const contAlojados = document.getElementById("totalAlojados");
     const contAvaliacao = document.getElementById("totalAvaliacao");
     const contDispensados = document.getElementById("totalDispensados");
+    const btnLista = document.getElementById("btnListaCompleta");
 
     // Alternar formulário
     btnToggle.onclick = () => form.classList.toggle("hidden");
@@ -54,6 +56,7 @@
         cidade_natal: form.cidade_natal.value,
         ultimo_clube: form.ultimo_clube.value,
         empresario: form.empresario.value,
+        telefone: form.telefone.value,
         timestamp: serverTimestamp()
       };
 
@@ -65,31 +68,19 @@
       form.classList.add("hidden");
     };
 
-    // Renderizar atletas
-    onSnapshot(elencoRef, (snapshot) => {
-      const atletas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      const anoFiltro = filtroAno.value;
+    // 🔹 Função para renderizar com filtros
+    function renderizarAtletas(atletas) {
       const statusFiltro = filtroStatus.value;
+      const alojFiltro = filtroAlojamento.value;
+      const catFiltro = filtroCategoria.value;
 
       const filtrados = atletas.filter(a => {
-        const ano = a.data_nascimento ? a.data_nascimento.slice(0,4) : "";
-        const anoOk = anoFiltro ? ano === anoFiltro : true;
         const statusOk = statusFiltro ? a.status_principal === statusFiltro : true;
-        return anoOk && statusOk;
+        const alojOk = alojFiltro ? a.alojamento === alojFiltro : true;
+        const catOk = catFiltro ? a.categoria === catFiltro : true;
+        return statusOk && alojOk && catOk;
       });
 
-      // Atualizar contadores
-      const ativos = atletas.filter(a => a.status_principal !== "Dispensado");
-      contTotal.textContent = ativos.length;
-      contAlojados.textContent = atletas.filter(a => a.alojamento === "Alojado").length;
-      contAvaliacao.textContent = atletas.filter(a => a.status_principal === "Em Avaliação").length;
-      contDispensados.textContent = atletas.filter(a => a.status_principal === "Dispensado").length;
-
-      // Atualizar filtro de anos
-      const anos = [...new Set(atletas.map(a => a.data_nascimento?.slice(0,4)).filter(Boolean))].sort();
-      filtroAno.innerHTML = `<option value="">Filtrar por Ano</option>` + anos.map(a => `<option value="${a}">${a}</option>`).join("");
-
-      // Render tabela
       tabela.innerHTML = filtrados.map(a => {
         const statusComposto = a.status_principal === "Dispensado"
           ? "Dispensado"
@@ -111,17 +102,37 @@
               <div><b>Cidade Natal:</b> ${a.cidade_natal || "-"}</div>
               <div><b>Último Clube:</b> ${a.ultimo_clube || "-"}</div>
               <div><b>Empresário:</b> ${a.empresario || "-"}</div>
+              <div><b>Telefone Atleta:</b> ${a.telefone || "-"}</div>
             </td>
           </tr>
         `;
       }).join("");
+    }
+
+    // 🔹 Atualizar tabela em tempo real
+    onSnapshot(elencoRef, (snapshot) => {
+      const atletas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Atualizar contadores
+      const ativos = atletas.filter(a => a.status_principal !== "Dispensado");
+      contTotal.textContent = ativos.length;
+      contAlojados.textContent = atletas.filter(a => a.alojamento === "Alojado").length;
+      contAvaliacao.textContent = atletas.filter(a => a.status_principal === "Em Avaliação").length;
+      contDispensados.textContent = atletas.filter(a => a.status_principal === "Dispensado").length;
+
+      // Renderizar primeira vez
+      renderizarAtletas(atletas);
+
+      // Escutar mudanças nos filtros
+      [filtroStatus, filtroAlojamento, filtroCategoria].forEach(f => {
+        f.onchange = () => renderizarAtletas(atletas);
+      });
     });
 
-    // Toggle linha de detalhes
+    // Toggle detalhes
     window.toggleDetalhes = (id) => {
       const linha = document.getElementById(`detalhes-${id}`);
-      if (linha.classList.contains("hidden")) linha.classList.remove("hidden");
-      else linha.classList.add("hidden");
+      linha.classList.toggle("hidden");
     };
 
     // Editar atleta
@@ -139,6 +150,7 @@
       form.cidade_natal.value = a.cidade_natal || "";
       form.ultimo_clube.value = a.ultimo_clube || "";
       form.empresario.value = a.empresario || "";
+      form.telefone.value = a.telefone || "";
       form.classList.remove("hidden");
     };
 
@@ -148,6 +160,63 @@
       if (confirm("Deseja excluir este atleta?")) {
         await deleteDoc(doc(db, "elenco", id));
       }
+    };
+
+    // Gerar lista completa (impressão)
+    btnLista.onclick = async () => {
+      const snap = await onSnapshot(elencoRef, (snapshot) => {
+        const atletas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const html = `
+          <html>
+          <head>
+            <title>Lista Completa de Atletas</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              h2 { text-align: center; margin-bottom: 15px; }
+              table { width: 100%; border-collapse: collapse; }
+              th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 13px; }
+              th { background: #f2f2f2; }
+              button { margin-top: 20px; padding: 8px 16px; }
+            </style>
+          </head>
+          <body>
+            <h2>Lista Completa de Atletas</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Posição</th>
+                  <th>Categoria</th>
+                  <th>Status</th>
+                  <th>Alojamento</th>
+                  <th>Cidade Natal</th>
+                  <th>Último Clube</th>
+                  <th>Empresário</th>
+                  <th>Telefone</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${atletas.map(a => `
+                  <tr>
+                    <td>${a.nome || "-"}</td>
+                    <td>${a.posicao || "-"}</td>
+                    <td>${a.categoria || "-"}</td>
+                    <td>${a.status_principal || "-"}</td>
+                    <td>${a.alojamento || "-"}</td>
+                    <td>${a.cidade_natal || "-"}</td>
+                    <td>${a.ultimo_clube || "-"}</td>
+                    <td>${a.empresario || "-"}</td>
+                    <td>${a.telefone || "-"}</td>
+                  </tr>`).join("")}
+              </tbody>
+            </table>
+            <button onclick="window.print()">Imprimir</button>
+          </body>
+          </html>`;
+        const w = window.open("", "_blank");
+        w.document.write(html);
+        w.document.close();
+      });
     };
   </script>
 </head>
@@ -181,18 +250,32 @@
 
     <!-- Botão e Filtros -->
     <div class="flex flex-col md:flex-row justify-between items-center gap-3">
-      <button id="btnToggleForm" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded shadow">
-        ➕ Adicionar Atleta
-      </button>
       <div class="flex gap-2">
-        <select id="filtroAno" class="border p-2 rounded">
-          <option value="">Filtrar por Ano</option>
-        </select>
+        <button id="btnToggleForm" class="bg-red-700 hover:bg-red-800 text-white px-4 py-2 rounded shadow">
+          ➕ Adicionar Atleta
+        </button>
+        <button id="btnListaCompleta" class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded shadow">
+          📋 Gerar Lista Completa
+        </button>
+      </div>
+      <div class="flex flex-wrap gap-2">
         <select id="filtroStatus" class="border p-2 rounded">
           <option value="">Filtrar por Status</option>
           <option>Ativo</option>
           <option>Em Avaliação</option>
           <option>Dispensado</option>
+        </select>
+        <select id="filtroAlojamento" class="border p-2 rounded">
+          <option value="">Filtrar por Alojamento</option>
+          <option>Alojado</option>
+          <option>Não Alojado</option>
+        </select>
+        <select id="filtroCategoria" class="border p-2 rounded">
+          <option value="">Filtrar por Categoria</option>
+          <option>Sub-15</option>
+          <option>Sub-17</option>
+          <option>Sub-20</option>
+          <option>Profissional</option>
         </select>
       </div>
     </div>
@@ -232,6 +315,7 @@
       <input type="text" id="cidade_natal" name="cidade_natal" placeholder="Cidade Natal" class="border p-2 rounded">
       <input type="text" id="ultimo_clube" name="ultimo_clube" placeholder="Último Clube" class="border p-2 rounded">
       <input type="text" id="empresario" name="empresario" placeholder="Empresário (se houver)" class="border p-2 rounded">
+      <input type="text" id="telefone" name="telefone" placeholder="Telefone (WhatsApp)" class="border p-2 rounded">
 
       <button class="bg-red-700 hover:bg-red-800 text-white py-2 rounded col-span-full">Salvar</button>
     </form>
