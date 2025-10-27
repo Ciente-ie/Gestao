@@ -9,12 +9,12 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-app.js";
     import { 
       getFirestore, collection, addDoc, onSnapshot, 
-      deleteDoc, doc, updateDoc, getDoc, serverTimestamp 
+      deleteDoc, doc, updateDoc, getDoc, serverTimestamp, getDocs 
     } from "https://www.gstatic.com/firebasejs/11.9.1/firebase-firestore.js";
 
     // 🔥 Config Firebase
     const firebaseConfig = {
-      apiKey: "COLE_SUA_API_KEY_AQUI",
+      apiKey: "COLE_SUA API_KEY_AQUI",
       authDomain: "appintegrado-ciente.firebaseapp.com",
       projectId: "appintegrado-ciente",
       storageBucket: "appintegrado-ciente.appspot.com",
@@ -68,7 +68,7 @@
       form.classList.add("hidden");
     };
 
-    // 🔹 Função para renderizar com filtros
+    // 🔹 Função para renderizar com filtros (tabela)
     function renderizarAtletas(atletas) {
       const statusFiltro = filtroStatus.value;
       const alojFiltro = filtroAlojamento.value;
@@ -109,21 +109,23 @@
       }).join("");
     }
 
-    // 🔹 Atualizar tabela em tempo real
-    onSnapshot(elencoRef, (snapshot) => {
-      const atletas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      // Atualizar contadores
+    // 🔹 Atualizar contadores (sempre com base no conjunto total)
+    function atualizarContadores(atletas) {
       const ativos = atletas.filter(a => a.status_principal !== "Dispensado");
       contTotal.textContent = ativos.length;
       contAlojados.textContent = atletas.filter(a => a.alojamento === "Alojado").length;
       contAvaliacao.textContent = atletas.filter(a => a.status_principal === "Em Avaliação").length;
       contDispensados.textContent = atletas.filter(a => a.status_principal === "Dispensado").length;
+    }
 
-      // Renderizar primeira vez
+    // 🔹 Snapshot em tempo real para manter dados atualizados
+    onSnapshot(elencoRef, (snapshot) => {
+      const atletas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      atualizarContadores(atletas);
       renderizarAtletas(atletas);
 
-      // Escutar mudanças nos filtros
+      // Re-render sempre que os filtros mudarem
       [filtroStatus, filtroAlojamento, filtroCategoria].forEach(f => {
         f.onchange = () => renderizarAtletas(atletas);
       });
@@ -162,61 +164,83 @@
       }
     };
 
-    // Gerar lista completa (impressão)
+    // 🖨️ Gerar lista FILTRADA para impressão
     btnLista.onclick = async () => {
-      const snap = await onSnapshot(elencoRef, (snapshot) => {
-        const atletas = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const html = `
-          <html>
-          <head>
-            <title>Lista Completa de Atletas</title>
-            <style>
-              body { font-family: Arial, sans-serif; padding: 20px; }
-              h2 { text-align: center; margin-bottom: 15px; }
-              table { width: 100%; border-collapse: collapse; }
-              th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 13px; }
-              th { background: #f2f2f2; }
-              button { margin-top: 20px; padding: 8px 16px; }
-            </style>
-          </head>
-          <body>
-            <h2>Lista Completa de Atletas</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Posição</th>
-                  <th>Categoria</th>
-                  <th>Status</th>
-                  <th>Alojamento</th>
-                  <th>Cidade Natal</th>
-                  <th>Último Clube</th>
-                  <th>Empresário</th>
-                  <th>Telefone</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${atletas.map(a => `
-                  <tr>
-                    <td>${a.nome || "-"}</td>
-                    <td>${a.posicao || "-"}</td>
-                    <td>${a.categoria || "-"}</td>
-                    <td>${a.status_principal || "-"}</td>
-                    <td>${a.alojamento || "-"}</td>
-                    <td>${a.cidade_natal || "-"}</td>
-                    <td>${a.ultimo_clube || "-"}</td>
-                    <td>${a.empresario || "-"}</td>
-                    <td>${a.telefone || "-"}</td>
-                  </tr>`).join("")}
-              </tbody>
-            </table>
-            <button onclick="window.print()">Imprimir</button>
-          </body>
-          </html>`;
-        const w = window.open("", "_blank");
-        w.document.write(html);
-        w.document.close();
+      const snap = await getDocs(elencoRef);
+      const atletas = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      // Aplicar filtros atuais
+      const statusFiltro = filtroStatus.value;
+      const alojFiltro = filtroAlojamento.value;
+      const catFiltro = filtroCategoria.value;
+
+      const filtrados = atletas.filter(a => {
+        const statusOk = statusFiltro ? a.status_principal === statusFiltro : true;
+        const alojOk = alojFiltro ? a.alojamento === alojFiltro : true;
+        const catOk = catFiltro ? a.categoria === catFiltro : true;
+        return statusOk && alojOk && catOk;
       });
+
+      const html = `
+        <html>
+        <head>
+          <title>Lista de Atletas Filtrada</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 20px; }
+            h2 { text-align: center; margin-bottom: 6px; }
+            p.filtros { text-align: center; margin: 0 0 12px; font-size: 13px; color: #333; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ccc; padding: 6px 8px; font-size: 13px; }
+            th { background: #f2f2f2; }
+            @media print {
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h2>Lista de Atletas</h2>
+          <p class="filtros"><b>Filtros:</b> 
+            Status: ${statusFiltro || "Todos"} | 
+            Alojamento: ${alojFiltro || "Todos"} | 
+            Categoria: ${catFiltro || "Todas"}
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Nome</th>
+                <th>Posição</th>
+                <th>Categoria</th>
+                <th>Status</th>
+                <th>Alojamento</th>
+                <th>Cidade Natal</th>
+                <th>Último Clube</th>
+                <th>Empresário</th>
+                <th>Telefone</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filtrados.map(a => `
+                <tr>
+                  <td>${a.nome || "-"}</td>
+                  <td>${a.posicao || "-"}</td>
+                  <td>${a.categoria || "-"}</td>
+                  <td>${a.status_principal || "-"}</td>
+                  <td>${a.alojamento || "-"}</td>
+                  <td>${a.cidade_natal || "-"}</td>
+                  <td>${a.ultimo_clube || "-"}</td>
+                  <td>${a.empresario || "-"}</td>
+                  <td>${a.telefone || "-"}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+          <button onclick="window.print()">Imprimir</button>
+        </body>
+        </html>
+      `;
+
+      const w = window.open("", "_blank");
+      w.document.write(html);
+      w.document.close();
     };
   </script>
 </head>
